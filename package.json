@@ -1,0 +1,35 @@
+{
+  "name": "nonmerci",
+  "version": "0.0.1",
+  "description": "Jeu de société Non Merci",
+  "main": "index.ts",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "start": "node ./dist/index.js",
+    "build": "npm run-script build-ts && npm run-script tslint",
+    "build-ts": "tsc",
+    "tslint": "tslint -c tslint.json -p tsconfig.json",
+    "test": "jasmine-ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/JKH4/nonmerci.git"
+  },
+  "author": "JKH4",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/JKH4/nonmerci/issues"
+  },
+  "homepage": "https://github.com/JKH4/nonmerci#readme",
+  "devDependencies": {
+    "jasmine": "^2.9.0",
+    "jasmine-ts": "^0.2.1",
+    "tslint": "^5.9.1",
+    "typescript": "^2.6.2"
+  },
+  "dependencies": {
+    "@types/jasmine": "^2.8.5"
+  }
+}
