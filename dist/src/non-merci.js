@@ -5,10 +5,9 @@ class NomMerci {
     constructor() {
         // console.log('NomMerci constructor');
     }
-    createNewGame() {
-        // console.log('createNewGame');
-        return new game_1.default();
+    createNewGame(options) {
+        return new game_1.default(options);
     }
 }
 exports.default = NomMerci;
-//# sourceMappingURL=nonmerci.js.map
+//# sourceMappingURL=non-merci.js.map
