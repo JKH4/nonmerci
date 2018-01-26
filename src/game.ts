@@ -1,5 +1,10 @@
 import BoardState from './board-state';
 
+/**
+ * Error List:
+ * - Error ('INVALID_NUMBER_OF_PLAYERS')
+ * - Error ('INVALID_GAME_STATUS')
+ */
 export default class Game {
   //#region Propriétés internes #########################################################
   private status: GameStatus;
@@ -37,40 +42,41 @@ export default class Game {
   //#endregion Getters ------------------------------------------------------------------
 
   //#region Actions #####################################################################
-  public start(): boolean {
+  public start() {
     if (this.status === GameStatus.Created) {
       this.status = GameStatus.OnGoing;
       this.currentTurn = 1;
       this.currentBoardState = new BoardState(this.players);
-      return true;
     } else {
-      return false;
+      throw new Error('INVALID_GAME_STATUS');
     }
   }
 
-  public terminate(): boolean {
+  public terminate() {
     if (this.status === GameStatus.OnGoing) {
       this.status = GameStatus.Terminated;
       this.currentBoardState = undefined;
-      return true;
     } else {
-      return false;
+      throw new Error('INVALID_GAME_STATUS');
     }
   }
 
-  public playNextTurn(action?: GameAction): boolean {
+  public playNextTurn(action?: GameAction) {
     if (this.status === GameStatus.OnGoing) {
       if (action === GameAction.Pay) {
-        this.getBoardState().pay();
+        try {
+          this.getBoardState().pay();
+        } catch (err) {
+          throw err;
+        }
       } else {
         // action par défaut
         this.getBoardState().take();
       }
       this.getBoardState().switchActivePlayer(this.getPlayers());
       this.currentTurn += 1;
-      return true;
     } else {
-      return false;
+      throw new Error('INVALID_GAME_STATUS');
     }
   }
   //#endregion Actions ------------------------------------------------------------------

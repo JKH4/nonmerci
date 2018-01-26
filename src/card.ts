@@ -1,3 +1,7 @@
+/**
+ * Error list:
+ * - Error ('INVALID_CARD_VALUE')
+ */
 export default class Card {
   private value: number;
 

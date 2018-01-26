@@ -1,6 +1,10 @@
 import Card from './card';
 import { IGameOptions } from './game';
 
+/**
+ * Error list:
+ * - Error ('NOT_ENOUGH_TOKENS')
+ */
 export default class BoardState {
   private currentCard: Card;
   private currentDeck: Card[];
@@ -58,8 +62,12 @@ export default class BoardState {
   }
 
   public pay() {
-    this.currentPlayerTokenPiles[this.activePlayer]--;
-    this.addTokenToBag();
+    if (this.getCurrentPlayerTokenPile(this.activePlayer) <= 0) {
+      throw new Error ('NOT_ENOUGH_TOKENS');
+    } else {
+      this.currentPlayerTokenPiles[this.activePlayer]--;
+      this.addTokenToBag();
+    }
   }
 
   public take() {

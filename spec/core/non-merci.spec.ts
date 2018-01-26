@@ -16,7 +16,7 @@ describe('Gérer une partie:', () => {
 
   it('Crée une nouvelle partie de NonMerci:', () => {
     const game = nm.createNewGame();
-    expect(game instanceof Game).toBeTruthy();
+    expect(game).toEqual(jasmine.any(Game));
     expect(game.getStatus()).toEqual(GameStatus.Created);
     expect(game.getPlayers().length).toBe(3);
     expect(game.getPlayers()).toEqual(['Joueur1', 'Joueur2', 'Joueur3']);
@@ -69,50 +69,48 @@ describe('Jouer une partie:', () => {
   });
 
   it('Démarre une partie:', () => {
-    expect(game.start()).toBeTruthy();
+    expect(() => game.start()).not.toThrowError();
     expect(game.getStatus()).toBe(GameStatus.OnGoing);
   });
 
   it('Refuse de démarrer une partie si elle est déjà démarrée:', () => {
     game.start();
     expect(game.getStatus()).toBe(GameStatus.OnGoing);
-    expect(game.start()).toBeFalsy();
+    expect(() => game.start()).toThrowError('INVALID_GAME_STATUS');
   });
 
   it('Refuse de démarrer une partie si elle est déjà terminée:', () => {
     game.start();
     game.terminate();
     expect(game.getStatus()).toBe(GameStatus.Terminated);
-    expect(game.start()).toBeFalsy();
+    expect(() => game.start()).toThrowError('INVALID_GAME_STATUS');
   });
 
   it('Termine une partie:', () => {
     game.start();
-    expect(game.terminate()).toBeTruthy();
+    expect(() => game.terminate()).not.toThrowError();
     expect(game.getStatus()).toBe(GameStatus.Terminated);
   });
 
   it('Refuse de terminer une partie si elle n\'est pas en cours:', () => {
-    expect(game.getStatus()).toBe(GameStatus.Created);
-    expect(game.terminate()).toBeFalsy();
     game.start();
     game.terminate();
     expect(game.getStatus()).toBe(GameStatus.Terminated);
-    expect(game.terminate()).toBeFalsy();
+    expect(() => game.terminate()).toThrowError('INVALID_GAME_STATUS');
   });
 
   it('Refuse de jouer le prochain tour d\'une partie non démarré:', () => {
     expect(game.getCurrentTurn()).toBeUndefined();
-    expect(game.playNextTurn()).toBeFalsy();
+    expect(() => game.playNextTurn()).toThrowError('INVALID_GAME_STATUS');
     expect(game.getCurrentTurn()).toBeUndefined();
   });
 
   it('Echoue à récupérer l\'état du plateau de jeu si la partie n\'est pas en cours:', () => {
     expect(game.getStatus()).toBe(GameStatus.Created);
-    expect(game.getBoardState() instanceof BoardState).toBeFalsy();
+    expect(game.getBoardState()).toBeUndefined();
     game.start();
     game.terminate();
-    expect(game.getBoardState() instanceof BoardState).toBeFalsy();
+    expect(game.getBoardState()).toBeUndefined();
   });
 
   it('Initialise la partie avec un tas de jetons vide:', () => {
@@ -123,7 +121,7 @@ describe('Jouer une partie:', () => {
   it('Initialise la partie avec un tas de 23 cartes + une carte visible:', () => {
     game.start();
     expect(game.getBoardState().getCurrentDeckSize()).toEqual(23);
-    expect(game.getBoardState().getCurrentCard() instanceof Card).toBeTruthy();
+    expect(game.getBoardState().getCurrentCard()).toEqual(jasmine.any(Card));
   });
 
   it('Initialise la partie sans piles de cartes devant les joueurs:', () => {
@@ -158,7 +156,7 @@ describe('Jouer un tour:', () => {
 
   it('Joue le prochain tour d\'une partie en cours:', () => {
     const turn = game.getCurrentTurn();
-    expect(game.playNextTurn()).toBeTruthy();
+    expect(() => game.playNextTurn()).not.toThrowError();
     expect(game.getCurrentTurn()).toEqual(turn + 1);
   });
 
@@ -168,26 +166,39 @@ describe('Jouer un tour:', () => {
     const playerTokens = board.getCurrentPlayerTokenPile(player);
     const tokenBag = board.getCurrentTokenBagSize();
     const turn = game.getCurrentTurn();
-    expect(game.playNextTurn(GameAction.Pay)).toBeTruthy();
+    expect(() => game.playNextTurn(GameAction.Pay)).not.toThrowError();
     expect(board.getCurrentPlayerTokenPile(player)).toEqual(playerTokens - 1);
     expect(board.getCurrentTokenBagSize()).toEqual(tokenBag + 1);
     expect(game.getCurrentTurn()).toEqual(turn + 1);
   });
 
-  it('Echoue à payer en tant qu\'action du tour si le joueur actif n\'a pas de jeton:', (done) => {
+  it('Echoue à payer en tant qu\'action du tour si le joueur actif n\'a pas de jeton:', () => {
     const board = game.getBoardState();
-    for (let i = 0; i < 100; i++) {
-      console.log(board.getActivePlayer() + '=' + board.getCurrentPlayerTokenPile(board.getActivePlayer()));
-      // console.log(board.getCurrentPlayerTokenPile(board.getActivePlayer()));
-      if (board.getCurrentPlayerTokenPile(board.getActivePlayer()) === 0) {
-        console.log('HAAAAAAAAAAAAAAAAA');
-        expect(() => board.pay()).toThrowError('NOT_ENOUGH_TOKENS');
-        break;
-      } else {
-        board.pay();
-      }
-      done();
-    }
+    spyOn(board, 'getCurrentPlayerTokenPile').and.callFake(() => 0);
+    expect(() => board.pay()).toThrowError('NOT_ENOUGH_TOKENS');
+  });
+
+  it('Transmet l\'erreur et laisse le plateau de jeu dans le même état si l\'action de payer échoue:', () => {
+    const board = game.getBoardState();
+
+    const turn = game.getCurrentTurn();
+    const activePlayer = board.getActivePlayer();
+    const card = board.getCurrentCard();
+    const deck = board.getCurrentDeckSize();
+    const tokenBag = board.getCurrentTokenBagSize();
+    const playerCardPiles = board.getCurrentPlayerCardPiles(activePlayer);
+    const playerTokens = board.getCurrentPlayerTokenPile(activePlayer);
+
+    spyOn(board, 'pay').and.callFake(() => { throw new Error('NOT_ENOUGH_TOKENS'); });
+
+    expect(() => game.playNextTurn(GameAction.Pay)).toThrowError('NOT_ENOUGH_TOKENS');
+    expect(game.getCurrentTurn()).toEqual(turn);
+    expect(board.getActivePlayer()).toEqual(activePlayer);
+    expect(board.getCurrentCard()).toEqual(card);
+    expect(board.getCurrentDeckSize()).toEqual(deck);
+    expect(board.getCurrentTokenBagSize()).toEqual(tokenBag);
+    expect(board.getCurrentPlayerCardPiles(activePlayer)).toEqual(playerCardPiles);
+    expect(board.getCurrentPlayerTokenPile(activePlayer)).toEqual(playerTokens);
   });
 
   it('Choisi de prendre en tant qu\'action du tour:', () => {
@@ -201,7 +212,7 @@ describe('Jouer un tour:', () => {
     const card = board.getCurrentCard();
     const deckSize = board.getCurrentDeckSize();
     const turn = game.getCurrentTurn();
-    expect(game.playNextTurn(GameAction.Take)).toBeTruthy();
+    expect(() => game.playNextTurn(GameAction.Take)).not.toThrowError();
     expect(board.getCurrentPlayerTokenPile(player)).toEqual(playerTokens + tokenBag);
     expect(board.getCurrentTokenBagSize()).toEqual(0);
     expect(board.getCurrentPlayerCardPiles(player).indexOf(card)).toBeGreaterThan(-1);
@@ -210,12 +221,13 @@ describe('Jouer un tour:', () => {
   });
 
   it('Récupére l\'état du plateau de jeu d\'une partie en cours:', () => {
-    expect(game.getBoardState() instanceof BoardState).toBeTruthy();
+    expect(game.getStatus()).toEqual(GameStatus.OnGoing);
+    expect(game.getBoardState()).toEqual(jasmine.any(BoardState));
   });
 
   it('Consulte la carte visible sur le plateau de jeu:', () => {
     const currentCard = game.getBoardState().getCurrentCard();
-    expect(currentCard instanceof Card).toBeTruthy();
+    expect(currentCard).toEqual(jasmine.any(Card));
     expect(typeof currentCard.getValue()).toBe('number');
   });
 
