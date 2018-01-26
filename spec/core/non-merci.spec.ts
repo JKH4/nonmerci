@@ -1,5 +1,4 @@
-// import any from 'jasmine';
-import jasmine from 'jasmine';
+import jasmineModule from 'jasmine';
 
 import NonMerci from '../../src/non-merci';
 
