@@ -1,13 +1,16 @@
 import Card from './card';
+import Deck from './deck';
 import { IGameOptions } from './game';
 
 /**
  * Error list:
  * - Error ('NOT_ENOUGH_TOKENS')
+ * - Error ('NO_MORE_CARD')
+ * - Error ('END_OF_GAME')
  */
 export default class BoardState {
   private currentCard: Card;
-  private currentDeck: Card[];
+  private currentDeck: Deck;
   private currentTokenBag: number;
   private currentPlayerCardPiles: {
     [player: string]: Card[];
@@ -18,16 +21,8 @@ export default class BoardState {
   private activePlayer: string;
 
   constructor(players: string[]) {
-    const allCards = [];
-    for (let i = 3; i < 36; i++) {
-      allCards.push(new Card(i));
-    }
-    this.shuffle(allCards);
-    this.currentDeck = [];
-    while (this.currentDeck.length < 24) {
-      this.currentDeck.push(allCards.pop());
-    }
-    this.currentCard = this.currentDeck.pop();
+    this.currentDeck = new Deck(24);
+    this.currentCard = this.currentDeck.drawNextCard();
     this.currentTokenBag = 0;
     this.currentPlayerCardPiles = {};
     this.currentPlayerTokenPiles = {};
@@ -39,11 +34,25 @@ export default class BoardState {
   }
 
   public getCurrentCard = (): Card => this.currentCard;
-  public getCurrentDeckSize = (): number => this.currentDeck.length;
+  public getCurrentDeckSize = (): number => this.currentDeck.getSize();
   public getCurrentTokenBagSize = (): number => this.currentTokenBag;
   public getCurrentPlayerCardPiles = (player: string): Card[] => this.currentPlayerCardPiles[player];
   public getCurrentPlayerTokenPile = (player: string): number => this.currentPlayerTokenPiles[player];
   public getActivePlayer = (): string => this.activePlayer;
+
+  public getCardScore(player: string): number {
+    const score = this.getCurrentPlayerCardPiles(player)
+      .map((card: Card) => card.getValue())
+      .sort((v1, v2) => v1 - v2)
+      .reduce((totalScore: number, currentValue: number, i, array) => {
+        return totalScore + (array[i] === array[i - 1] + 1 ? 0 : currentValue);
+      }, 0);
+    return score;
+  }
+
+  public getFinalScore(player: string): number {
+    return this.getCardScore(player) - this.getCurrentPlayerTokenPile(player);
+  }
 
   public addTokenToBag() {
     this.currentTokenBag++;
@@ -64,6 +73,8 @@ export default class BoardState {
   public pay() {
     if (this.getCurrentPlayerTokenPile(this.activePlayer) <= 0) {
       throw new Error ('NOT_ENOUGH_TOKENS');
+    } else if (!this.getCurrentCard()) {
+      throw new Error ('NO_MORE_CARD');
     } else {
       this.currentPlayerTokenPiles[this.activePlayer]--;
       this.addTokenToBag();
@@ -71,23 +82,23 @@ export default class BoardState {
   }
 
   public take() {
-    this.currentPlayerTokenPiles[this.activePlayer] += this.currentTokenBag;
-    this.currentTokenBag = 0;
-    this.currentPlayerCardPiles[this.activePlayer].push(this.currentCard);
-    this.currentCard = this.currentDeck.pop();
-  }
-
-  /**
-   * Shuffles array in place. ES6 version
-   * @param {Array} a items An array containing the items.
-   * from https://stackoverflow.com/questions/6274339/how-can-i-shuffle-an-array
-   */
-  private shuffle(a: any[]) {
-    for (let i = a.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [a[i], a[j]] = [a[j], a[i]];
+    if (!this.getCurrentCard()) {
+      throw new Error ('NO_MORE_CARD');
+    } else {
+      this.currentPlayerTokenPiles[this.activePlayer] += this.currentTokenBag;
+      this.currentTokenBag = 0;
+      this.currentPlayerCardPiles[this.activePlayer].push(this.currentCard);
+      try {
+        this.currentCard = this.currentDeck.drawNextCard();
+      } catch (e) {
+        const err: Error = e;
+        if (err.message === 'EMPTY_DECK') {
+          this.currentCard = undefined;
+          throw new Error('END_OF_GAME');
+        } else {
+          throw e;
+        }
+      }
     }
-    return a;
   }
-
 }
