@@ -112,6 +112,6 @@ export enum GameAction {
 }
 
 export interface IGameOptions {
-  players: [string];
+  players: string[];
 }
 //#endregion Types et Interfaces annexes ################################################
