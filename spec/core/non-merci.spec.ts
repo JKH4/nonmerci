@@ -58,4 +58,7 @@ describe('Gérer une partie:', () => {
     expect(failedNewGame).toBeUndefined();
   });
 
+  fit('test main:', () => {
+    nm.main();
+  });
 });

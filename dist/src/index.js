@@ -2,6 +2,8 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const non_merci_1 = require("./non-merci");
 const nm = new non_merci_1.default();
+console.log('Non merci ! mais un peu quand meme ?');
+nm.main();
 // // greeter.ts
 // function greeter(person: string) {
 //   return `Hello ${person}!`;
