@@ -65,6 +65,36 @@ describe('Gestion du plateau', () => {
         expect(visibleCard).toBeUndefined();
       }
     });
+
+    it('Conserve le nombre de jeton à 11 x nb joueur en jeu après une action', () => {
+      const initTotalTokens = board.getCurrentBoardState().controlData.totalTokens;
+      board.take();
+      board.switchActivePlayer();
+      expect(initTotalTokens).toEqual(board.getCurrentBoardState().controlData.totalTokens);
+      board.pay();
+      board.switchActivePlayer();
+      expect(initTotalTokens).toEqual(board.getCurrentBoardState().controlData.totalTokens);
+    });
+
+    it('Créé un plateau de jeu avec le deck éventuellement fourni:', () => {
+      const fixedBoard = new BoardState(
+        ['Anna', 'Bob', 'David'],
+        new Deck(0, [new Card(3), new Card(5), new Card(10)]),
+      );
+      expect(fixedBoard.getCurrentBoardState().deck.deckSize).toEqual(3 - 1 /*carte visible*/);
+      try {
+        while (1) { fixedBoard.take(); }
+      } catch (e) {
+        const err: Error = e;
+        expect(err.message).toEqual('END_OF_GAME');
+        const cards = fixedBoard.getCurrentBoardState().activePlayer.cards;
+        expect(cards.length).toEqual(3);
+        expect(cards.map((c) => c.getValue())).toContain(3);
+        expect(cards.map((c) => c.getValue())).toContain(5);
+        expect(cards.map((c) => c.getValue())).toContain(10);
+        expect(cards.map((c) => c.getValue())).not.toContain(4);
+      }
+    });
   });
 
   // **************************************************************************************

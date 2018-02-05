@@ -90,7 +90,7 @@ export default class Game {
           }
         }
       }
-      this.getBoardState().switchActivePlayer(this.getPlayers());
+      this.getBoardState().switchActivePlayer();
       this.currentTurn += 1;
     } else {
       throw new Error('INVALID_GAME_STATUS');

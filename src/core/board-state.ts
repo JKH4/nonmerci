@@ -47,6 +47,9 @@ export default class BoardState {
         name: this.activePlayer,
         tokens: this.getCurrentPlayerTokenPile(this.activePlayer),
       },
+      controlData: {
+        totalTokens: this.getTotalTokens(),
+      },
       deck: {
         deckSize: this.getCurrentDeckSize(),
         visibleCard: this.getCurrentCard(),
@@ -63,7 +66,8 @@ export default class BoardState {
   //#endregion Getters ------------------------------------------------------------------
 
   //#region Actions #####################################################################
-  public switchActivePlayer(playerList: string[]) {
+  public switchActivePlayer() {
+    const playerList = Object.keys(this.currentPlayerCardPiles);
     if (playerList.indexOf(this.activePlayer) === playerList.length - 1) {
       this.activePlayer = playerList[0];
     } else {
@@ -134,6 +138,14 @@ export default class BoardState {
   private removeTokenFromBag() {
     this.currentTokenBag--;
   }
+
+  /**
+   * Checks and Controls
+   */
+  private getTotalTokens = (): number => this.currentTokenBag +
+    Object.keys(this.currentPlayerTokenPiles)
+      .map((k) => this.currentPlayerTokenPiles[k])
+      .reduce((prev, curr) => prev + curr, 0)
   //#endregion Méthodes privées ---------------------------------------------------------
 
 }
@@ -154,4 +166,7 @@ export interface ICurrentBoardState {
     name: string;
     cards: Card[];
   }>;
+  controlData: {
+    totalTokens: number;
+  };
 }

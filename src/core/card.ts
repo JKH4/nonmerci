@@ -14,4 +14,5 @@ export default class Card {
   }
 
   public getValue = (): number => this.value;
+  public toString = (): string => '|_' + this.value + '_|';
 }
