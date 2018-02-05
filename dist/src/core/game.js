@@ -81,7 +81,7 @@ class Game {
                     }
                 }
             }
-            this.getBoardState().switchActivePlayer(this.getPlayers());
+            this.getBoardState().switchActivePlayer();
             this.currentTurn += 1;
         }
         else {

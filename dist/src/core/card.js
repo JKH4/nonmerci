@@ -7,6 +7,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 class Card {
     constructor(value) {
         this.getValue = () => this.value;
+        this.toString = () => this.value <= 9
+            ? '│ ' + this.value + '│'
+            : '│' + this.value + '│';
         // Validation de la valeur
         if (value < 3 || value > 35) {
             throw new Error('INVALID_CARD_VALUE');

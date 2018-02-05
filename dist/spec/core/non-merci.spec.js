@@ -47,8 +47,8 @@ describe('Gérer une partie:', () => {
         expect(() => failedNewGame = nm.createNewGame(gameOptions)).toThrowError('INVALID_NUMBER_OF_PLAYERS');
         expect(failedNewGame).toBeUndefined();
     });
-    it('test main:', () => {
-        nm.main();
-    });
+    // xit('test main:', () => {
+    //   nm.main();
+    // });
 });
 //# sourceMappingURL=non-merci.spec.js.map

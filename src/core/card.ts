@@ -14,5 +14,7 @@ export default class Card {
   }
 
   public getValue = (): number => this.value;
-  public toString = (): string => '|_' + this.value + '_|';
+  public toString = (): string => this.value <= 9
+    ? '│ ' + this.value + '│'
+    : '│'  + this.value + '│'
 }

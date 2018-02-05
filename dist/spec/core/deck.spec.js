@@ -28,5 +28,10 @@ describe('Manipuler un deck:', () => {
         expect(deck.drawNextCard()).toEqual(jasmine.any(card_1.default));
         expect(deck.getSize()).toEqual(23);
     });
+    it('Echoue à tirer une carte quand le deck est vide', () => {
+        const deck = new deck_1.default(0);
+        expect(() => deck.drawNextCard()).toThrowError('EMPTY_DECK');
+        // expect(deck.getSize()).toEqual(23);
+    });
 });
 //# sourceMappingURL=deck.spec.js.map

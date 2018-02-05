@@ -6,18 +6,23 @@ const card_1 = require("./card");
  * - Error ('EMPTY_DECK')
  */
 class Deck {
-    constructor(size) {
+    constructor(size, cards) {
         this.getSize = () => this.deck.length;
-        const allCards = [];
-        for (let i = 3; i < 36; i++) {
-            allCards.push(new card_1.default(i));
+        if (cards) {
+            this.deck = cards;
         }
-        this.shuffle(allCards);
-        const deckSize = size !== undefined ? size : 24;
-        // const minValue = 3;
-        this.deck = [];
-        for (let i = 0; i < deckSize; i++) {
-            this.deck.push(allCards.pop());
+        else {
+            const allCards = [];
+            for (let i = 3; i < 36; i++) {
+                allCards.push(new card_1.default(i));
+            }
+            this.shuffle(allCards);
+            const deckSize = size !== undefined ? size : 24;
+            // const minValue = 3;
+            this.deck = [];
+            for (let i = 0; i < deckSize; i++) {
+                this.deck.push(allCards.pop());
+            }
         }
     }
     drawNextCard() {

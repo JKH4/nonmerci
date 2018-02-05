@@ -2,9 +2,16 @@
 // import commander = require('commander');
 import EventEmitter = require('events');
 import readline = require('readline');
+
+import { ICurrentBoardState } from './board-state';
+import Card from './card';
 import Game, { GameAction, IGameOptions } from './game';
 
 import Workflow, { IActionResult, IStep, StepType } from './../workflow/workflow';
+
+import Bot, { BrainOptions } from './../bot/bot';
+
+const MAX_WIDTH = 120;
 
 export default class NomMerci {
   private state: IState = {
@@ -12,6 +19,7 @@ export default class NomMerci {
     options: {
       players: [],
     },
+    bots: {},
   };
   /************************************************************************************************
    * Constructor
@@ -52,7 +60,12 @@ export default class NomMerci {
     });
 
     const askUser = (id: string, question: string, validation: (any), resolve: any, reject: any) => {
-      rl.question(question, (answer) => validation(answer)
+      let result = '';
+      result += this.drawBorder({ maxWidth: MAX_WIDTH, pos: 'top' });
+      result += this.drawQuestion( { maxWidth: MAX_WIDTH }, question);
+      result += this.drawBorder({ maxWidth: MAX_WIDTH, pos: 'bot' });
+      console.log(result);
+      rl.question('?', (answer) => validation(answer)
         ? resolve({ id, res: answer })
         : reject(new Error('Réponse invalide: ' + answer)));
     };
@@ -66,19 +79,21 @@ export default class NomMerci {
         this.state.options = {
           players: [],
         };
-        const question = 'Démarrer ou quitter ? (s, q)';
-        const validation = (answer: string): boolean => answer === 's' || answer === 'q';
+        const question = 'Démarrer (d) ou quitter (q) ? (par défaut d)';
+        const validation = (answer: string): boolean => answer === 'd' || answer === 'q' || answer === '';
         askUser(actionId, question, validation, resolve, reject);
       }),
       onResolve: (result: IActionResult) => {
-        // console.log('stepChoose onResolve', result);
-        if (result.res === 's') {
-          return stepNbPlayer;
-        } else if (result.res === 'q') {
-          return stepClose;
-        } else {
-          console.log('Invalid choice, choose again');
-          return stepChoose;
+        switch (result.res) {
+          case 'd':
+            return stepNbPlayer;
+          case '':
+            return stepNbPlayer;
+          case 'q':
+            return stepClose;
+          default:
+            console.log('Invalid choice, choose again');
+            return stepChoose;
         }
       },
       onReject: (err: Error) => {
@@ -103,14 +118,18 @@ export default class NomMerci {
       type: StepType.NORMAL,
       payload: (): Promise<IActionResult> => new Promise ((resolve, reject) => {
         const actionId = 'action_askNbPlayer';
-        const question = '# Nombre de joueur ? (3, 4, 5)';
-        const validation = (answer: string): boolean => answer === '3' || answer === '4' || answer === '5';
+        const question = 'Nombre de joueur ? (3 à 5, par défaut 4)';
+        const validation = (answer: string): boolean =>
+          answer === '3' || answer === '4' || answer === '5' || answer === '';
         askUser(actionId, question, validation, resolve, reject);
       }),
       onResolve: (result: IActionResult) => {
-        console.log('stepNbPlayer onResolve', result);
+        // console.log('stepNbPlayer onResolve', result);
         if (result.res === '3' || result.res === '4' || result.res === '5') {
           this.state.playerNumberTemp = result.res;
+          return stepPlayerNames;
+        } else if (result.res === '') {
+          this.state.playerNumberTemp = 4;
           return stepPlayerNames;
         } else {
           console.log('Invalid choice, choose again');
@@ -126,15 +145,19 @@ export default class NomMerci {
     const stepPlayerNames: IStep = {
       id: 'stepPlayerNames',
       type: StepType.NORMAL,
-      payload: (iteration): Promise<IActionResult> => new Promise ((resolve, reject) => {
+      payload: (): Promise<IActionResult> => new Promise ((resolve, reject) => {
         const actionId = 'action_askPlayerName';
-        const question = '# Nom du Xème joueur ?';
-        const validation = (answer: string): boolean => answer.length > 0;
+        const xieme = 1 + this.state.options.players.length;
+        const question = 'Modifier le nom de Joueur_' + xieme + ' ? (Joueur_' + xieme + ' par défault)';
+        const validation = (answer: string): boolean => true;
         askUser(actionId, question, validation, resolve, reject);
       }),
       onResolve: (result: IActionResult) => {
-        console.log('stepPlayerNames onResolve', result);
+        // console.log('stepPlayerNames onResolve', result);
         if (result.res.length > 0) {
+          if ((result.res as string).startsWith('bot')) {
+            result.res = this.initBot(result.res);
+          }
           this.state.options.players.push(result.res);
           this.state.playerNumberTemp--;
           if (this.state.playerNumberTemp > 0) {
@@ -143,8 +166,13 @@ export default class NomMerci {
             return stepCreateGame;
           }
         } else {
-          console.log('Invalid choice, choose again');
-          return stepPlayerNames;
+          this.state.options.players.push('Joueur_' + (1 + this.state.options.players.length));
+          this.state.playerNumberTemp--;
+          if (this.state.playerNumberTemp > 0) {
+            return stepPlayerNames;
+          } else {
+            return stepCreateGame;
+          }
         }
       },
       onReject: (err: Error) => {
@@ -161,7 +189,7 @@ export default class NomMerci {
         resolve({ id: actionId, res: this.createNewGame(this.state.options) });
       }),
       onResolve: (result: IActionResult) => {
-        console.log('stepCreateGame onResolve', result);
+        // console.log('stepCreateGame onResolve', result);
         this.state.game = result.res;
         return stepStartGame;
       },
@@ -184,7 +212,7 @@ export default class NomMerci {
         }
       }),
       onResolve: (result: IActionResult) => {
-        console.log('stepStartGame onResolve', result);
+        // console.log('stepStartGame onResolve', result);
         return stepPlayNext;
       },
       onReject: (err: Error) => {
@@ -198,23 +226,36 @@ export default class NomMerci {
       type: StepType.NORMAL,
       payload: (iteration): Promise<IActionResult> => new Promise ((resolve, reject) => {
         const actionId = 'action_playNext';
-        const boardstate = this.state.game.getBoardState();
-        const player = boardstate.getActivePlayer();
-        const playerTokens = boardstate.getCurrentPlayerTokenPile(player);
-        const playerCards = boardstate.getCurrentPlayerCardPiles(player).map((c) => c.getValue());
-        const card = boardstate.getCurrentCard().getValue();
-        const cardTokens = boardstate.getCurrentTokenBagSize();
-        console.log('########################################################');
-        console.log('# Joueur actif: ' + player + ', (' + playerTokens + ' jetons)');
-        console.log('# Cartes du joueur: ', playerCards);
-        console.log('# Carte à prendre: ' + card + '(' + cardTokens + ' jetons)');
-        console.log('########################################################');
-        const question = '# Choisissez une action ? p pour PAY, t pour TAKE';
-        const validation = (answer: string): boolean => answer === 'p' || answer === 't';
-        askUser(actionId, question, validation, resolve, reject);
+        const boardstate = this.state.game.getBoardState().getCurrentBoardState();
+        const player = boardstate.activePlayer.name;
+        try {
+          console.log(this.drawBoard({ maxWidth: MAX_WIDTH}, boardstate));
+        } catch (e) {
+          console.error(e);
+          const playerTokens = boardstate.activePlayer.tokens;
+          const playerCards = boardstate.activePlayer.cards.map((c) => c.toString());
+          const card = boardstate.deck.visibleCard;
+          const cardTokens = boardstate.deck.visibleCardTokens; // .getCurrentTokenBagSize();
+          console.log('############## UX du pauvre ##########################################');
+          console.log('# Joueur actif: ' + player + ', (' + playerTokens + ' jetons)');
+          console.log('# Cartes du joueur: ', playerCards);
+          console.log('# Carte à prendre: ' + card + '(' + cardTokens + ' jetons)');
+          console.log('######################################################################');
+        }
+        if (player.startsWith('bot')) {
+          const botAction = this.state.bots[player].proposeAction(boardstate);
+          const answer = botAction === GameAction.Pay ? 'p' : 't';
+          // console.log('# Action choisi par ' + player + ' (bot) : '
+          //  + botAction + '(workflow answer: ' + answer + ')');
+          resolve({ id: actionId, res: answer });
+        } else {
+          const question = 'Choisissez une action ? PAY (p) ou TAKE (t), (t) par défaut';
+          const validation = (answer: string): boolean => answer === 'p' || answer === 't';
+          askUser(actionId, question, validation, resolve, reject);
+        }
       }),
       onResolve: (result: IActionResult) => {
-        console.log('stepPlayNext onResolve', result);
+        // console.log('stepPlayNext onResolve', result);
         if (result.res === 'p') {
           this.state.game.playNextTurn(GameAction.Pay);
           return stepPlayNext;
@@ -244,13 +285,18 @@ export default class NomMerci {
       payload: (iteration): Promise<IActionResult> => new Promise ((resolve, reject) => {
         const actionId = 'action_showScore';
         const scores = this.state.game.getScores();
-        console.log('########################################################');
-        console.log('# Scores: ', scores);
-        console.log('########################################################');
+        try {
+          console.log(this.drawScores({ maxWidth: MAX_WIDTH }, scores));
+        } catch (e) {
+          console.error(e);
+          console.log('############## UX du pauvre ##########################################');
+          console.log('# Scores: ', scores);
+          console.log('######################################################################');
+        }
         resolve({ id: actionId, res: scores });
       }),
       onResolve: (result: IActionResult) => {
-        console.log('stepShowScore onResolve', result);
+        // console.log('stepShowScore onResolve', result);
         return stepChoose;
       },
       onReject: (err: Error) => {
@@ -269,73 +315,358 @@ export default class NomMerci {
       stepPlayNext,
       stepShowScore,
     ];
+  }
 
-    // const showInterface = () => new Promise((resolve, reject) => {
-    //   console.log('--------------------------------');
-    //   console.log('------ Menu principal   --------');
-    //   console.log('--------------------------------');
-    //   resolve();
-    // });
+  private initBot = (name: string): string => {
+    const id = Math.floor(Math.random() * 1000);
+    let nameWithId = name + '_' + id;
+    if (!name.startsWith('bot')) {
+      throw new Error('INVALID_BOT_NAME');
+    } else if (name.indexOf('random') > -1) {
+      this.state.bots[nameWithId] = new Bot(BrainOptions.Random);
+      return nameWithId;
+    } else if (name.indexOf('take') > -1) {
+      this.state.bots[nameWithId] = new Bot(BrainOptions.Take);
+      return nameWithId;
+    } else {
+      nameWithId = name + '_random_' + id;
+      this.state.bots[nameWithId] = new Bot(BrainOptions.Random);
+      return nameWithId;
+    }
+  }
 
-    // const closeAll = (): Promise<IActionResult> => new Promise((resolve, reject) => {
-    //   console.log('Closing all');
-    //   rl.close();
-    //   process.stdin.destroy();
-    //   return {id: 'action_closeAll', res: 'ok' };
-    // });
+  // private drawAll = (boardstate: ICurrentBoardState) => {
+  //   let result = '';
+  //   result += this.drawBoard({ maxWidth: MAX_WIDTH }, boardstate);
+  //   return result;
+  //   // this.drawOtherPlayers(boardstate, maxWidth);
+  //   // this.drawOtherMe(boardstate, maxWidth);
+  //   // console.log('##################################################');
+  //   // console.log('# Tour 0018                                      #');
+  //   // console.log('#                ┌──┐┐┐┐┐┐┐┐┐┐┐┐┐┐┐┐┐┐┐┐┐             #');
+  //   // console.log('#  \ 25 /        │19│││││││││││││││││││││             #');
+  //   // console.log('#   \__/         └──┘┘┘┘┘┘┘┘┘┘┘┘┘┘┘┘┘┘┘┘┘             #');
+  //   // console.log('##################################################');
+  //   // console.log('# Les autres joueurs                             #');
+  //   // console.log('#            ┌──┐ ┌──┐┌──┐ ┌──┐┌──┐              #');
+  //   // console.log('#  Joueur1   │ 3│ │ 7..19│ │19..19│              #');
+  //   // console.log('#  ~24       └──┘ └──┘└──┘ └──┘└──┘              #');
+  //   // console.log('#            ┌──┐ ┌──┐┌──┐ ┌──┐┌──┐              #');
+  //   // console.log('#  Joueur2   │ 3│ │ 7..19│ │19..19│              #');
+  //   // console.log('#  ~12       └──┘ └──┘└──┘ └──┘└──┘              #');
+  //   // console.log('#            ┌──┐ ┌──┐┌──┐ ┌──┐┌──┐              #');
+  //   // console.log('#  Joueur3   │ 3│ │ 7..19│ │19..19│              #');
+  //   // console.log('#  ~156      └──┘ └──┘└──┘ └──┘└──┘              #');
+  //   // console.log('##################################################');
+  //   // console.log('# Votre situation                                #');
+  //   // console.log('#           ┌──┐ ┌──┐┌──┐ ┌──┐┌──┐               #');
+  //   // console.log('#  \ 25 /   │ 3│ │ 7..19│ │19..19│               #');
+  //   // console.log('#   \__/    └──┘ └──┘└──┘ └──┘└──┘               #');
+  //   // console.log('##################################################');
+  // }
 
-    // const askStart = (): Promise<IActionResult> => new Promise((resolve, reject) => {
-    //   const actionId = 'action_askStart';
-    //   const question = 'Démarrer ou quitter ? (s, q)';
-    //   const validation = (answer: string): boolean => answer === 's' || answer === 'q';
-    //   askUser(actionId, question, validation, resolve, reject);
-    // });
-    // const askNbPlayer = (): Promise<IActionResult> => new Promise((resolve, reject) => {
-    //   const actionId = 'action_askNbPlayer';
-    //   const question = '# Nombre de joueur ? (3, 4, 5)';
-    //   const validation = (answer: string): boolean => answer === '3' || answer === '4' || answer === '5';
-    //   askUser(actionId, question, validation, resolve, reject);
-    // });
-    // const askGameAction = (): Promise<IActionResult> => new Promise((resolve, reject) => {
-    //   const actionId = 'action_askGameAction';
-    //   const question = '# Action de jeu ? (p, t)';
-    //   const validation = (answer: string): boolean => answer === 'p' || answer === 't';
-    //   askUser(actionId, question, validation, resolve, reject);
-    // });
+  private drawBoard = ({ maxWidth }: IDrawOptions, boardstate: ICurrentBoardState): string => {
+    let result = '';
+    result += this.drawBorder({ maxWidth, pos: 'top' });
+    result += this.drawTitle({ maxWidth },
+      'Tour ' + this.state.game.getCurrentTurn() + ', Joueur Actif: ' + boardstate.activePlayer.name);
+    result += this.drawBoardCardAndToken({ maxWidth, pos: 'top' }, boardstate);
+    result += this.drawBoardCardAndToken({ maxWidth, pos: 'mid' }, boardstate);
+    result += this.drawBoardCardAndToken({ maxWidth, pos: 'bot' }, boardstate);
+    result += this.drawBorder({ maxWidth, pos: 'mid' });
+    result += this.drawTitle({ maxWidth }, 'Les autres joueurs...');
+    boardstate.otherPlayers.forEach((player) => {
+      result += this.drawOtherPlayerCards({ maxWidth, pos: 'top' }, player);
+      result += this.drawOtherPlayerCards({ maxWidth, pos: 'mid' }, player);
+      result += this.drawOtherPlayerCards({ maxWidth, pos: 'bot' }, player);
+    });
+    result += this.drawBorder({ maxWidth, pos: 'mid' });
+    result += this.drawTitle({ maxWidth }, 'Votre situation... (' + boardstate.activePlayer.name + ')');
+    result += this.drawActivePlayerSituation({ maxWidth, pos: 'top' }, boardstate.activePlayer);
+    result += this.drawActivePlayerSituation({ maxWidth, pos: 'mid' }, boardstate.activePlayer);
+    result += this.drawActivePlayerSituation({ maxWidth, pos: 'bot' }, boardstate.activePlayer);
+    result += this.drawBorder({ maxWidth, pos: 'bot' });
+    return result;
+  }
 
-    // const step1: IStep = {
-    //   id: 'step_init',
-    //   type: StepType.START,
-    //   payload: askStart,
-    //   onResolve: (result: IActionResult) => {
-    //     console.log('step_init onResolve');
-    //     return step2;
-    //   },
-    //   onReject: (err: Error) => {
-    //     console.log('step_init onError: ', err.message);
-    //     return step1;
-    //   },
-    // };
+  private drawBorder = ({ pos, maxWidth }: IDrawOptions): string => {
+    const first =
+      pos === 'top' ? '╔'
+      : pos === 'mid' ? '╠'
+      : '╚';
+    const last =
+      pos === 'top' ? '╗'
+      : pos === 'mid' ? '╣'
+      : '╝';
+    const stuff = '═';
 
-    // const step2: IStep = {
-    //   id: 'step_stuff',
-    //   type: StepType.NORMAL,
-    //   payload: askNbPlayer,
-    //   onResolve: (result: IActionResult) => {
-    //     console.log('step_stuff onResolve');
-    //     return step3;
-    //   },
-    //   onReject: (err: Error) => {
-    //     console.log('step_stuff onError: ', err.message);
-    //     return step1;
-    //   },
-    // };
+    let result = '';
+    result += first;
+    while (result.length < (maxWidth - last.length)) {
+      result += stuff;
+    }
+    result += last;
+    return result + '\r\n';
+  }
 
-    // const step3: IStep = {
-    //   id: 'step_closeALl',
-    //   type: StepType.END,
-    //   payload: closeAll,
-    // };
+  private drawTitle = ({ maxWidth }: IDrawOptions, title: string): string => {
+    const first = '║ ';
+    const last = ' ║';
+    const stuff = ' ';
+
+    let result = '';
+    result += first;
+    result += title.substr(0, maxWidth - first.length - last.length);
+    while (result.length < (maxWidth - last.length)) {
+      result += stuff;
+    }
+    result += last;
+    return result + '\r\n';
+  }
+
+  private drawBoardCardAndToken = ({ maxWidth, pos }: IDrawOptions, boardstate: ICurrentBoardState): string => {
+    const first = '║ ';
+    const last = ' ║';
+    const stuff = ' ';
+
+    const deckSize = boardstate.deck.deckSize;
+    const visibleCard = boardstate.deck.visibleCard;
+    const tokens = boardstate.deck.visibleCardTokens;
+
+    let result = '';
+    result += first;
+    switch (pos) {
+      case 'top':
+        result += '               ┌──┐';
+        for (let i = 0; i < deckSize; i++) {
+          result += '┐';
+        }
+        break;
+      case 'mid':
+        result += '  \\ ' + (tokens <= 9 ? ' ' : '') + tokens + ' /       ' + visibleCard.toString();
+        for (let i = 0; i < deckSize; i++) {
+          result += '│';
+        }
+        break;
+      case 'bot':
+        result += '   \\__/        └──┘';
+        for (let i = 0; i < deckSize; i++) {
+          result += '┘';
+        }
+        break;
+      default:
+        throw new Error('DRAW_INVALID_POS');
+    }
+    while (result.length < (maxWidth - last.length)) {
+      result += stuff;
+    }
+    result += last;
+    return result + '\r\n';
+  }
+
+  private drawOtherPlayerCards = ({ maxWidth, pos }: IDrawOptions, player: { name: string, cards: Card[]}): string => {
+    const first = '║ ';
+    const last = ' ║';
+    const stuff = ' ';
+
+    let result = '';
+    result += first;
+    switch (pos) {
+      case 'top':
+        result += '               ';
+        result += this.drawVisibleCards({ maxWidth, pos }, player.cards);
+        break;
+      case 'mid':
+        result += player.name.substr(0, 14) + ':';
+        while (result.length < 17) {
+          result += stuff;
+        }
+        result += this.drawVisibleCards({ maxWidth, pos }, player.cards);
+        break;
+      case 'bot':
+        result += '               ';
+        result += this.drawVisibleCards({ maxWidth, pos }, player.cards);
+        break;
+      default:
+        throw new Error('DRAW_INVALID_POS');
+    }
+    while (result.length < (maxWidth - last.length)) {
+      result += stuff;
+    }
+    result += last;
+    return result + '\r\n';
+  }
+
+  private drawActivePlayerSituation(
+    { maxWidth, pos }: IDrawOptions,
+    activePlayer: { name: string, cards: Card[], tokens: number, currentScore: number },
+  ): string {
+    const first = '║ ';
+    const last = ' ║';
+    const stuff = ' ';
+
+    const tokens = activePlayer.tokens;
+    let result = '';
+    result += first;
+    switch (pos) {
+      case 'top':
+        result += '               ';
+        result += this.drawVisibleCards({ maxWidth, pos }, activePlayer.cards);
+        break;
+      case 'mid':
+        result += '  \\ ' + (tokens <= 9 ? ' ' : '') + tokens + ' /       ';
+        result += this.drawVisibleCards({ maxWidth, pos }, activePlayer.cards);
+        break;
+      case 'bot':
+        result += '   \\__/        ';
+        result += this.drawVisibleCards({ maxWidth, pos }, activePlayer.cards);
+        break;
+      default:
+        throw new Error('DRAW_INVALID_POS');
+    }
+    while (result.length < (maxWidth - last.length)) {
+      result += stuff;
+    }
+    result += last;
+    return result + '\r\n';
+  }
+
+  private drawVisibleCards = ({ pos }: IDrawOptions, cards: Card[]): string => {
+    let result = '';
+    cards.sort((c1, c2) => c1.getValue() - c2.getValue() );
+    switch (pos) {
+      case 'top':
+        cards.forEach((card, i, arr) => {
+          const prevValue = i > 0 ? arr[i - 1].getValue() : -1000;
+          const nextValue = i < (arr.length - 1) ? arr[i + 1].getValue() : +1000;
+          if (prevValue === (card.getValue() - 1) && nextValue === (card.getValue() + 1)) {
+            // au milieu
+            result += '';
+          } else {
+            result += '┌──┐';
+          }
+        });
+        break;
+      case 'mid':
+        cards.forEach((card, i, arr) => {
+          const prevValue = i > 0 ? arr[i - 1].getValue() : -1000;
+          const nextValue = i < (arr.length - 1) ? arr[i + 1].getValue() : +1000;
+          if (prevValue === (card.getValue() - 1) && nextValue !== (card.getValue() + 1)) {
+            // à la fin d'une série
+            result += '.' + card.toString().substr(1, 4);
+          } else if (prevValue === (card.getValue() - 1) && nextValue === (card.getValue() + 1)) {
+            // au milieu d'une série
+            result += '';
+          } else if (prevValue !== (card.getValue() - 1) && nextValue === (card.getValue() + 1)) {
+            // au début d'une série
+            result += card.toString().substr(0, 3) + '.';
+          } else {
+            result += card.toString();
+          }
+        });
+        break;
+      case 'bot':
+        cards.forEach((card, i , arr) => {
+          const prevValue = i > 0 ? arr[i - 1].getValue() : -1000;
+          const nextValue = i < (arr.length - 1) ? arr[i + 1].getValue() : +1000;
+          if (prevValue === (card.getValue() - 1) && nextValue === (card.getValue() + 1)) {
+            // au milieu
+            result += '';
+          } else {
+            result += '└──┘';
+          }
+        });
+        break;
+      default:
+        throw new Error('DRAW_INVALID_POS');
+    }
+    return result;
+  }
+
+  private drawQuestion = ({ maxWidth }: IDrawOptions, question: string): string => {
+    const first = '║ ';
+    const last = ' ║';
+    const stuff = ' ';
+
+    let result = '';
+    result += first;
+    result += question;
+    while (result.length < (maxWidth - last.length)) {
+      result += stuff;
+    }
+    result += last;
+
+    return result + '\r\n';
+  }
+
+  private drawScores = ({ maxWidth }: IDrawOptions, scores: Array<[string, number]>): string => {
+    let result = '';
+    result += this.drawBorder({ maxWidth, pos: 'top'});
+    result += this.drawTitle({ maxWidth }, '*\\o/* ! Scores de la partie ! *\\o/*');
+    result += this.drawInBoxScores({ maxWidth, pos: 'top' }, scores);
+    result += this.drawInBoxScores({ maxWidth, pos: 'mid1' }, scores);
+    result += this.drawInBoxScores({ maxWidth, pos: 'mid2' }, scores);
+    result += this.drawInBoxScores({ maxWidth, pos: 'bot' }, scores);
+    result += this.drawBorder({ maxWidth, pos: 'bot'});
+    return result;
+  }
+
+  private drawInBoxScores({ maxWidth, pos }: IDrawOptions, scores: Array<[string, number]>) {
+    const first = '║ ';
+    const last = ' ║';
+    const stuff = ' ';
+
+    let result = '';
+    result += first;
+    switch (pos) {
+      case 'top':
+        // cadre
+        scores.forEach((s, i) => {
+          result += i === 0
+            ? '┌───────1er───────┐'
+            : '┌───────' + (i + 1) + 'eme──────┐';
+        });
+        break;
+      case 'mid1':
+        // première ligne
+        scores.forEach((s, i) => {
+          const nameSize = s[0].length;
+          let tempName = nameSize > 16
+            ? '│ ' + s[0].substr(0, 16)
+            : '│ ' + s[0];
+          while (tempName.length < 18) {
+            tempName += ' ';
+          }
+          tempName += '│';
+          result += tempName;
+        });
+        break;
+      case 'mid2':
+        // deuxième ligne
+        scores.forEach((s, i) => {
+          // const scoreSize = s.score.toString().length;
+          let tempScore = ('│ ' + s[1] + ' points').substr(0, 16);
+          while (tempScore.length < 18) {
+            tempScore += ' ';
+          }
+          tempScore += '│';
+          result += tempScore;
+        });
+        break;
+      case 'bot':
+        // cadre fin
+        scores.forEach((s, i) => {
+          result += '└─────────────────┘';
+        });
+        break;
+      default:
+        throw new Error('DRAW_INVALID_POS');
+    }
+    while (result.length < maxWidth - last.length) {
+      result += stuff;
+    }
+    result += last;
+    return result + '\r\n';
   }
 }
 
@@ -343,4 +674,12 @@ interface IState {
   playerNumberTemp: number;
   options: IGameOptions;
   game?: Game;
+  bots?: {
+    [name: string]: Bot;
+  };
+}
+
+interface IDrawOptions {
+  maxWidth: number; // 120
+  pos?: string; // top, mid, bot
 }
