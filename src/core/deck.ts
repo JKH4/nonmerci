@@ -6,17 +6,21 @@ import Card from './card';
 export default class Deck {
   private deck: Card[];
 
-  constructor(size?: number) {
-    const allCards = [];
-    for (let i = 3; i < 36; i++) {
-      allCards.push(new Card(i));
-    }
-    this.shuffle(allCards);
-    const deckSize = size !== undefined ? size : 24;
-    // const minValue = 3;
-    this.deck = [];
-    for (let i = 0; i < deckSize; i++) {
-      this.deck.push(allCards.pop());
+  constructor(size?: number, cards?: Card[]) {
+    if (cards) {
+      this.deck = cards;
+    } else {
+      const allCards = [];
+      for (let i = 3; i < 36; i++) {
+        allCards.push(new Card(i));
+      }
+      this.shuffle(allCards);
+      const deckSize = size !== undefined ? size : 24;
+      // const minValue = 3;
+      this.deck = [];
+      for (let i = 0; i < deckSize; i++) {
+        this.deck.push(allCards.pop());
+      }
     }
   }
 

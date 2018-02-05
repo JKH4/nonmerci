@@ -1,4 +1,4 @@
-import Card from '../../src/card';
+import Card from '../../src/core/card';
 
 describe('Manipuler une carte:', () => {
   it('Créé une carte de valeur 3', () => {

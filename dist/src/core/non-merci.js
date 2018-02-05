@@ -2,7 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const readline = require("readline");
 const game_1 = require("./game");
-const workflow_1 = require("./workflow");
+const workflow_1 = require("./../workflow/workflow");
 class NomMerci {
     /************************************************************************************************
      * Constructor

@@ -1,6 +1,6 @@
-import BoardState from '../../src/board-state';
-import Card from '../../src/card';
-import Game, { GameAction, GameStatus, IGameOptions } from '../../src/game';
+import BoardState from '../../src/core/board-state';
+import Card from '../../src/core/card';
+import Game, { GameAction, GameStatus, IGameOptions } from '../../src/core/game';
 
 // **************************************************************************************
 describe('Jouer une partie:', () => {
@@ -239,7 +239,6 @@ describe('Jouer un tour:', () => {
             expect(game.getScores().find(([playerName, playerScore]: [string, number]) => playerName === player))
               .not.toBeUndefined();
           });
-          console.log(game.getScores());
           break;
         } else {
           throw e;

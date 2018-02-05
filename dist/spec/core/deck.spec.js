@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const card_1 = require("../../src/card");
-const deck_1 = require("../../src/deck");
+const card_1 = require("../../src/core/card");
+const deck_1 = require("../../src/core/deck");
 describe('Manipuler un deck:', () => {
     it('Initialise un deck avec 0 cartes', () => {
         const deck = new deck_1.default(0);

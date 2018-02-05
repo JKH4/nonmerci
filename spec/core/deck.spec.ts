@@ -1,5 +1,5 @@
-import Card from '../../src/card';
-import Deck from '../../src/deck';
+import Card from '../../src/core/card';
+import Deck from '../../src/core/deck';
 
 describe('Manipuler un deck:', () => {
   it('Initialise un deck avec 0 cartes', () => {

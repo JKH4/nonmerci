@@ -31,12 +31,12 @@ export default class Workflow {
    * Workflow Step resolver
    */
   private stepResolver = (step: IStep) => {
-    console.log('stepResolver', step.id);
+    // console.log('stepResolver', step.id);
     step.payload().then((res) => {
-      console.log('stepResolver THEN');
+      // console.log('stepResolver THEN');
       step.onResolve ? this.stepResolver(step.onResolve(res)) : console.log('stepResolver NO MORE ACTION');
     }).catch((err) => {
-      console.log('stepResolver CATCH');
+      // console.log('stepResolver CATCH');
       step.onReject ? this.stepResolver(step.onReject(err)) : console.log('stepResolver NO MORE ACTION');
     });
   }

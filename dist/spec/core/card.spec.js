@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const card_1 = require("../../src/card");
+const card_1 = require("../../src/core/card");
 describe('Manipuler une carte:', () => {
     it('Créé une carte de valeur 3', () => {
         expect(new card_1.default(3).getValue()).toEqual(3);

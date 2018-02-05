@@ -1,10 +1,10 @@
 import jasmineModule from 'jasmine';
 
-import NonMerci from '../../src/non-merci';
+import NonMerci from '../../src/core/non-merci';
 
-import BoardState from '../../src/board-state';
-import Card from '../../src/card';
-import Game, { GameAction, GameStatus, IGameOptions } from '../../src/game';
+import BoardState from '../../src/core/board-state';
+import Card from '../../src/core/card';
+import Game, { GameAction, GameStatus, IGameOptions } from '../../src/core/game';
 
 // **************************************************************************************
 describe('Gérer une partie:', () => {
@@ -58,7 +58,7 @@ describe('Gérer une partie:', () => {
     expect(failedNewGame).toBeUndefined();
   });
 
-  it('test main:', () => {
+  xit('test main:', () => {
     nm.main();
   });
 });

@@ -1,8 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const board_state_1 = require("../../src/board-state");
-const card_1 = require("../../src/card");
-const game_1 = require("../../src/game");
+const board_state_1 = require("../../src/core/board-state");
+const card_1 = require("../../src/core/card");
+const game_1 = require("../../src/core/game");
 // **************************************************************************************
 describe('Jouer une partie:', () => {
     let game;

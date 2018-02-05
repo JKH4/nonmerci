@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const board_state_1 = require("../../src/board-state");
-const card_1 = require("../../src/card");
+const board_state_1 = require("../../src/core/board-state");
+const card_1 = require("../../src/core/card");
 describe('Gestion du plateau', () => {
     // **************************************************************************************
     describe('Manipuler le plateau de jeu:', () => {

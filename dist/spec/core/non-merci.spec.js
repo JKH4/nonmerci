@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const non_merci_1 = require("../../src/non-merci");
-const game_1 = require("../../src/game");
+const non_merci_1 = require("../../src/core/non-merci");
+const game_1 = require("../../src/core/game");
 // **************************************************************************************
 describe('Gérer une partie:', () => {
     let nm;

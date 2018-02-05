@@ -4,7 +4,7 @@ import EventEmitter = require('events');
 import readline = require('readline');
 import Game, { GameAction, IGameOptions } from './game';
 
-import Workflow, { IActionResult, IStep, StepType } from './workflow';
+import Workflow, { IActionResult, IStep, StepType } from './../workflow/workflow';
 
 export default class NomMerci {
   private state: IState = {
@@ -17,9 +17,9 @@ export default class NomMerci {
    * Constructor
    ************************************************************************************************/
   constructor() {
-    console.log('#####################################################################');
-    console.log('###############              NON MERCI               ################');
-    console.log('#####################################################################');
+    // console.log('#####################################################################');
+    // console.log('###############              NON MERCI               ################');
+    // console.log('#####################################################################');
     // this.program = new commander();
   }
 
@@ -27,7 +27,7 @@ export default class NomMerci {
    * Public methods
    ************************************************************************************************/
   public createNewGame(options?: IGameOptions): Game {
-    console.log(options);
+    // console.log(options);
     return new Game(options);
   }
 
@@ -71,7 +71,7 @@ export default class NomMerci {
         askUser(actionId, question, validation, resolve, reject);
       }),
       onResolve: (result: IActionResult) => {
-        console.log('stepChoose onResolve', result);
+        // console.log('stepChoose onResolve', result);
         if (result.res === 's') {
           return stepNbPlayer;
         } else if (result.res === 'q') {
