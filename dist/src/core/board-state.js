@@ -24,6 +24,7 @@ class BoardState {
                 },
                 controlData: {
                     totalTokens: this.getTotalTokens(),
+                    turn: this.turn,
                 },
                 deck: {
                     deckSize: this.getCurrentDeckSize(),
@@ -53,6 +54,7 @@ class BoardState {
             Object.keys(this.currentPlayerTokenPiles)
                 .map((k) => this.currentPlayerTokenPiles[k])
                 .reduce((prev, curr) => prev + curr, 0);
+        this.turn = 1;
         this.currentDeck = deck ? deck : new deck_1.default(24);
         this.currentCard = this.currentDeck.drawNextCard();
         this.currentTokenBag = 0;
@@ -69,6 +71,9 @@ class BoardState {
     }
     //#endregion Getters ------------------------------------------------------------------
     //#region Actions #####################################################################
+    incrementTurn() {
+        this.turn++;
+    }
     switchActivePlayer() {
         const playerList = Object.keys(this.currentPlayerCardPiles);
         if (playerList.indexOf(this.activePlayer) === playerList.length - 1) {

@@ -16,7 +16,7 @@ class Game {
         //#region Getters #####################################################################
         this.getStatus = () => this.status;
         this.getPlayers = () => this.players;
-        this.getCurrentTurn = () => this.currentTurn;
+        // public getCurrentTurn = (): number => this.currentTurn;
         this.getBoardState = () => this.currentBoardState;
         this.getScores = () => this.scores;
         // Extraction des options par clonage ou par défaut
@@ -37,7 +37,7 @@ class Game {
     start() {
         if (this.status === GameStatus.Created) {
             this.status = GameStatus.OnGoing;
-            this.currentTurn = 1;
+            // this.currentTurn = 1;
             this.currentBoardState = new board_state_1.default(this.players);
         }
         else {
@@ -67,6 +67,7 @@ class Game {
                 catch (err) {
                     throw err;
                 }
+                this.getBoardState().switchActivePlayer();
             }
             else {
                 // action par défaut
@@ -81,8 +82,7 @@ class Game {
                     }
                 }
             }
-            this.getBoardState().switchActivePlayer();
-            this.currentTurn += 1;
+            this.getBoardState().incrementTurn();
         }
         else {
             throw new Error('INVALID_GAME_STATUS');
