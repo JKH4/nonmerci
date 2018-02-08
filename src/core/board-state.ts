@@ -10,6 +10,7 @@ import { IGameOptions } from './game';
  */
 export default class BoardState {
   //#region Propriétés internes #########################################################
+  private turn: number;
   private currentCard: Card;
   private currentDeck: Deck;
   private currentTokenBag: number;
@@ -26,6 +27,7 @@ export default class BoardState {
    * Constructor
    */
   constructor(players: string[], deck?: Deck) {
+    this.turn = 1;
     this.currentDeck = deck ? deck : new Deck(24);
     this.currentCard = this.currentDeck.drawNextCard();
     this.currentTokenBag = 0;
@@ -49,6 +51,7 @@ export default class BoardState {
       },
       controlData: {
         totalTokens: this.getTotalTokens(),
+        turn: this.turn,
       },
       deck: {
         deckSize: this.getCurrentDeckSize(),
@@ -66,6 +69,10 @@ export default class BoardState {
   //#endregion Getters ------------------------------------------------------------------
 
   //#region Actions #####################################################################
+  public incrementTurn() {
+    this.turn++;
+  }
+
   public switchActivePlayer() {
     const playerList = Object.keys(this.currentPlayerCardPiles);
     if (playerList.indexOf(this.activePlayer) === playerList.length - 1) {
@@ -168,5 +175,6 @@ export interface ICurrentBoardState {
   }>;
   controlData: {
     totalTokens: number;
+    turn: number;
   };
 }

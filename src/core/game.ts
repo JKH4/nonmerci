@@ -9,7 +9,7 @@ import BoardState from './board-state';
 export default class Game {
   //#region Propriétés internes #########################################################
   private status: GameStatus;
-  private currentTurn: number;
+  // private currentTurn: number;
   private currentBoardState: BoardState;
   private players: string[];
   private defaultOptions: IGameOptions = {
@@ -39,7 +39,7 @@ export default class Game {
   //#region Getters #####################################################################
   public getStatus = (): string => this.status;
   public getPlayers = (): string[] => this.players;
-  public getCurrentTurn = (): number => this.currentTurn;
+  // public getCurrentTurn = (): number => this.currentTurn;
   public getBoardState = (): BoardState => this.currentBoardState;
   public getScores = (): Array<[string, number]> => this.scores;
   //#endregion Getters ------------------------------------------------------------------
@@ -48,7 +48,7 @@ export default class Game {
   public start() {
     if (this.status === GameStatus.Created) {
       this.status = GameStatus.OnGoing;
-      this.currentTurn = 1;
+      // this.currentTurn = 1;
       this.currentBoardState = new BoardState(this.players);
     } else {
       throw new Error('INVALID_GAME_STATUS');
@@ -78,6 +78,7 @@ export default class Game {
         } catch (err) {
           throw err;
         }
+        this.getBoardState().switchActivePlayer();
       } else {
         // action par défaut
         try {
@@ -90,8 +91,7 @@ export default class Game {
           }
         }
       }
-      this.getBoardState().switchActivePlayer();
-      this.currentTurn += 1;
+      this.getBoardState().incrementTurn();
     } else {
       throw new Error('INVALID_GAME_STATUS');
     }

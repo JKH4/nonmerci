@@ -36,6 +36,12 @@ describe('Gestion du plateau', () => {
       const currentBoardState: ICurrentBoardState = board.getCurrentBoardState();
       expect(currentBoardState.otherPlayers).toEqual([{ name: 'Bob', cards: [] }, { name: 'David', cards: []}]);
     });
+
+    it('Accède aux infos de controle via l\'état courrant et visible du plateau de jeu', () => {
+      const currentBoardState: ICurrentBoardState = board.getCurrentBoardState();
+      expect(currentBoardState.controlData.totalTokens).toEqual(11 * 3);
+      expect(currentBoardState.controlData.turn).toEqual(1);
+    });
   });
 
   describe('Valider l\'intégrité de l\'état du plateau de jeu:', () => {
