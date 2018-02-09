@@ -34,6 +34,11 @@ export default class Deck {
     }
   }
 
+  public clone(): Deck {
+    const cloneDeck = this.deck.map((c) => c.clone());
+    return new Deck(0, cloneDeck);
+  }
+
   /**
    * Shuffles array in place. ES6 version
    * @param {Array} a items An array containing the items.
