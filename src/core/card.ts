@@ -17,4 +17,5 @@ export default class Card {
   public toString = (): string => this.value <= 9
     ? '│ ' + this.value + '│'
     : '│'  + this.value + '│'
+  public clone = (): Card => new Card(this.value);
 }
