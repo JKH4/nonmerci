@@ -7,14 +7,14 @@ export class SingleCellGame extends MctsGame {
   public board?: number[];
   public currentPlayer: number;
   constructor() {
-    console.log('SingleCellGame Constructor');
+    // console.log('SingleCellGame Constructor');
     super();
     // First player to play always wins
     this.board = [null];
     this.currentPlayer = 0;
   }
   public getPossibleMoves() {
-    console.log('SingleCellGame getPossibleMoves()');
+    // console.log('SingleCellGame getPossibleMoves()');
     if (this.board[0] === null) {
       return [0];
     }
@@ -22,7 +22,7 @@ export class SingleCellGame extends MctsGame {
   }
 
   public performMove(move: number) {
-    console.log('SingleCellGame performMove()');
+    // console.log('SingleCellGame performMove()');
     this.board[move] = 0;
   }
 

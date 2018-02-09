@@ -5,7 +5,7 @@ import RandomSelection from './../../src/mcts/random-selection';
 
 import { SingleCellGame, SummingDiceGame, TicTacToeGame, TwoCellGame } from './game-examples';
 
-fdescribe('mcts', () => {
+describe('mcts', () => {
   it('should return one option when only one is returned for a state', () => {
     const mcts = new MCTS(new SingleCellGame());
     expect(mcts.selectMove()).toEqual(0);
@@ -50,7 +50,7 @@ fdescribe('mcts', () => {
   });
 });
 
-fdescribe('RandomElement', () => {
+describe('RandomElement', () => {
   it('should initialize an array based on its first parameter', () => {
     const rs = new RandomSelection([0, 1, 2, 3]);
     expect(rs.array).toEqual([0, 1, 2, 3]);

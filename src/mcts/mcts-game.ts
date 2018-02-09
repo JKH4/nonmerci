@@ -7,11 +7,11 @@ export class MctsGame {
     // console.log('Constructor MctsGame');
   }
   public getPossibleMoves(): any[] | RandomSelection {
-    console.log('MctsGame getPossibleMoves()');
+    // console.log('MctsGame getPossibleMoves()');
     return ['MctsGame1', 'MctsGame2'];
   }
   public performMove(move: any): void {
-    console.log('MctsGame performMove()');
+    // console.log('MctsGame performMove()');
   }
   public getCurrentPlayer(): any {
     return 666;
