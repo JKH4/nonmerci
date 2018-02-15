@@ -6,16 +6,22 @@ import Card from './card';
 export default class Deck {
   private deck: Card[];
 
-  constructor(size?: number, cards?: Card[]) {
-    if (cards) {
-      this.deck = cards;
+  constructor(options: {
+    cardValues?: number[],
+    // cards?: Card[],
+    size?: number,
+  }) {
+    if (options.cardValues) {
+      this.deck = options.cardValues.map((v) => new Card(v));
+    // } else if (options.cards) {
+    //   this.deck = options.cards;
     } else {
       const allCards = [];
       for (let i = 3; i < 36; i++) {
         allCards.push(new Card(i));
       }
       this.shuffle(allCards);
-      const deckSize = size !== undefined ? size : 24;
+      const deckSize = options.size !== undefined ? options.size : 24;
       // const minValue = 3;
       this.deck = [];
       for (let i = 0; i < deckSize; i++) {
@@ -35,8 +41,12 @@ export default class Deck {
   }
 
   public clone(): Deck {
-    const cloneDeck = this.deck.map((c) => c.clone());
-    return new Deck(0, cloneDeck);
+    // const cloneDeck = this.deck.map((c) => c.clone());
+    return new Deck({size: 0, cardValues: this.deck.map((c) => c.getValue())});
+  }
+
+  public getState(): TDeckState {
+    return this.deck.map((c) => c.getValue());
   }
 
   /**
@@ -52,3 +62,5 @@ export default class Deck {
     return a;
   }
 }
+
+export type TDeckState = number[];

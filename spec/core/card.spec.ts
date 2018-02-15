@@ -13,6 +13,10 @@ describe('Manipuler une carte:', () => {
     expect(() => new Card(36)).toThrowError('INVALID_CARD_VALUE');
   });
 
+  it('Echoue à créer une carte de valeur undefined', () => {
+    expect(() => new Card(undefined)).toThrowError('INVALID_CARD_VALUE');
+  });
+
   it('Clone une carte avec la meme valeur', () => {
     const card = new Card(10);
     const notClone = card;

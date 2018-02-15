@@ -1,4 +1,4 @@
-import BoardState from './board-state';
+import Board from './board';
 
 /**
  * Error List:
@@ -10,7 +10,7 @@ export default class Game {
   //#region Propriétés internes #########################################################
   private status: GameStatus;
   // private currentTurn: number;
-  private currentBoardState: BoardState;
+  private board: Board;
   private players: string[];
   private defaultOptions: IGameOptions = {
     players: ['Joueur1', 'Joueur2', 'Joueur3'],
@@ -40,7 +40,7 @@ export default class Game {
   public getStatus = (): string => this.status;
   public getPlayers = (): string[] => this.players;
   // public getCurrentTurn = (): number => this.currentTurn;
-  public getBoardState = (): BoardState => this.currentBoardState;
+  public getBoard = (): Board => this.board;
   public getScores = (): Array<[string, number]> => this.scores;
   //#endregion Getters ------------------------------------------------------------------
 
@@ -49,7 +49,7 @@ export default class Game {
     if (this.status === GameStatus.Created) {
       this.status = GameStatus.OnGoing;
       // this.currentTurn = 1;
-      this.currentBoardState = new BoardState(this.players);
+      this.board = new Board({ players: this.players });
     } else {
       throw new Error('INVALID_GAME_STATUS');
     }
@@ -59,12 +59,12 @@ export default class Game {
     if (this.status === GameStatus.OnGoing) {
       this.scores = [];
       this.getPlayers().forEach((player) => {
-        this.scores.push([player, this.getBoardState().getFinalScore(player)]);
+        this.scores.push([player, this.getBoard().getFinalScore(player)]);
       });
       this.scores.sort((s1: [string, number], s2: [string, number]) => s1[1] - s2[1]);
 
       this.status = GameStatus.Terminated;
-      this.currentBoardState = undefined;
+      this.board = undefined;
     } else {
       throw new Error('INVALID_GAME_STATUS');
     }
@@ -74,15 +74,15 @@ export default class Game {
     if (this.status === GameStatus.OnGoing) {
       if (action === GameAction.Pay) {
         try {
-          this.getBoardState().pay();
+          this.getBoard().pay();
         } catch (err) {
           throw err;
         }
-        this.getBoardState().switchActivePlayer();
+        this.getBoard().switchActivePlayer();
       } else {
         // action par défaut
         try {
-          this.getBoardState().take();
+          this.getBoard().take();
         } catch (e) {
           const err: Error = e;
           if (err.message === 'END_OF_GAME') {
@@ -91,7 +91,7 @@ export default class Game {
           }
         }
       }
-      this.getBoardState().incrementTurn();
+      this.getBoard().incrementTurn();
     } else {
       throw new Error('INVALID_GAME_STATUS');
     }

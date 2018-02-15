@@ -3,7 +3,7 @@
 import EventEmitter = require('events');
 import readline = require('readline');
 
-import { ICurrentBoardState } from './board-state';
+import { IFullBoardState, IPlayerBoardState } from './board';
 import Card from './card';
 import Game, { GameAction, IGameOptions } from './game';
 
@@ -223,16 +223,18 @@ export default class NomMerci {
       type: StepType.NORMAL,
       payload: (iteration): Promise<IActionResult> => new Promise ((resolve, reject) => {
         const actionId = 'action_playNext';
-        const boardstate = this.state.game.getBoardState().getCurrentBoardState();
-        const player = boardstate.activePlayer.name;
+        const boardstate = this.state.game.getBoard().getPlayerState();
+        const player = boardstate.activePlayer;
         try {
           console.log(this.drawer.drawBoard({ maxWidth: MAX_WIDTH}, boardstate));
         } catch (e) {
           console.error(e);
-          const playerTokens = boardstate.activePlayer.tokens;
-          const playerCards = boardstate.activePlayer.cards.map((c) => c.toString());
-          const card = boardstate.deck.visibleCard;
-          const cardTokens = boardstate.deck.visibleCardTokens; // .getCurrentTokenBagSize();
+          const playerTokens = boardstate.privateData.hiddenTokens;
+          const playerCards = boardstate.board.playerCards
+            .find((p) => p.name === boardstate.activePlayer).cards
+            .map((value) => value <= 9 ? '│ ' + value + '│' : '│'  + value + '│');
+          const card = boardstate.board.visibleCard;
+          const cardTokens = boardstate.board.visibleTokens; // .getCurrentTokenBagSize();
           console.log('############## UX du pauvre ##########################################');
           console.log('# Joueur actif: ' + player + ', (' + playerTokens + ' jetons)');
           console.log('# Cartes du joueur: ', playerCards);

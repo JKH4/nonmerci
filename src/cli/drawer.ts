@@ -1,4 +1,4 @@
-import { ICurrentBoardState } from '../core/board-state';
+import { IPlayerBoardState } from '../core/board';
 import Card from '../core/card';
 
 const DEFAULT_MAX_WIDTH = 120;
@@ -40,26 +40,30 @@ export default class Drawer {
     this.maxWidth = maxWidth || DEFAULT_MAX_WIDTH;
   }
 
-  public drawBoard = ({ maxWidth }: IDrawOptions, boardstate: ICurrentBoardState): string => {
+  public drawBoard = ({ maxWidth }: IDrawOptions, boardstate: IPlayerBoardState): string => {
     let result = '';
     result += this.drawBorder({ maxWidth, pos: 'top' });
     result += this.drawTitle({ maxWidth },
-      'Tour ' + boardstate.controlData.turn + ', Joueur Actif: ' + boardstate.activePlayer.name);
+      'Tour ' + boardstate.turn + ', Joueur Actif: ' + boardstate.activePlayer);
     result += this.drawBoardCardAndToken({ maxWidth, pos: 'top' }, boardstate);
     result += this.drawBoardCardAndToken({ maxWidth, pos: 'mid' }, boardstate);
     result += this.drawBoardCardAndToken({ maxWidth, pos: 'bot' }, boardstate);
     result += this.drawBorder({ maxWidth, pos: 'mid' });
     result += this.drawTitle({ maxWidth }, 'Les autres joueurs...');
-    boardstate.otherPlayers.forEach((player) => {
+    boardstate.board.playerCards.filter((p) => p.name !== boardstate.activePlayer).forEach((player) => {
       result += this.drawOtherPlayerCards({ maxWidth, pos: 'top' }, player);
       result += this.drawOtherPlayerCards({ maxWidth, pos: 'mid' }, player);
       result += this.drawOtherPlayerCards({ maxWidth, pos: 'bot' }, player);
     });
     result += this.drawBorder({ maxWidth, pos: 'mid' });
-    result += this.drawTitle({ maxWidth }, 'Votre situation... (' + boardstate.activePlayer.name + ')');
-    result += this.drawActivePlayerSituation({ maxWidth, pos: 'top' }, boardstate.activePlayer);
-    result += this.drawActivePlayerSituation({ maxWidth, pos: 'mid' }, boardstate.activePlayer);
-    result += this.drawActivePlayerSituation({ maxWidth, pos: 'bot' }, boardstate.activePlayer);
+    result += this.drawTitle({ maxWidth }, 'Votre situation... (' + boardstate.activePlayer + ')');
+    const playerData = {
+      cards: boardstate.board.playerCards.find((p) => p.name === boardstate.activePlayer).cards,
+      tokens: boardstate.privateData.hiddenTokens,
+    };
+    result += this.drawActivePlayerSituation({ maxWidth, pos: 'top' }, playerData);
+    result += this.drawActivePlayerSituation({ maxWidth, pos: 'mid' }, playerData);
+    result += this.drawActivePlayerSituation({ maxWidth, pos: 'bot' }, playerData);
     result += this.drawBorder({ maxWidth, pos: 'bot' });
     return result;
   }
@@ -127,14 +131,14 @@ export default class Drawer {
     return result + '\r\n';
   }
 
-  private drawBoardCardAndToken = ({ maxWidth, pos }: IDrawOptions, boardstate: ICurrentBoardState): string => {
+  private drawBoardCardAndToken = ({ maxWidth, pos }: IDrawOptions, boardstate: IPlayerBoardState): string => {
     const first = '║ ';
     const last = ' ║';
     const stuff = ' ';
 
-    const deckSize = boardstate.deck.deckSize;
-    const visibleCard = boardstate.deck.visibleCard;
-    const tokens = boardstate.deck.visibleCardTokens;
+    const deckSize = boardstate.board.deckSize;
+    const visibleCard = boardstate.board.visibleCard;
+    const tokens = boardstate.board.visibleTokens;
 
     let result = '';
     result += first;
@@ -167,7 +171,7 @@ export default class Drawer {
     return result + '\r\n';
   }
 
-  private drawOtherPlayerCards = ({ maxWidth, pos }: IDrawOptions, player: { name: string, cards: Card[]}): string => {
+  private drawOtherPlayerCards = ({ maxWidth, pos }: IDrawOptions, player: { name: string, cards: number[]}) => {
     const first = '║ ';
     const last = ' ║';
     const stuff = ' ';
@@ -202,7 +206,7 @@ export default class Drawer {
 
   private drawActivePlayerSituation(
     { maxWidth, pos }: IDrawOptions,
-    activePlayer: { name: string, cards: Card[], tokens: number, currentScore: number },
+    activePlayer: { cards: number[], tokens: number },
   ): string {
     const first = '║ ';
     const last = ' ║';
@@ -234,15 +238,15 @@ export default class Drawer {
     return result + '\r\n';
   }
 
-  private drawVisibleCards = ({ pos }: IDrawOptions, cards: Card[]): string => {
+  private drawVisibleCards = ({ pos }: IDrawOptions, cards: number[]): string => {
     let result = '';
-    cards.sort((c1, c2) => c1.getValue() - c2.getValue() );
+    cards.sort((c1, c2) => c1 - c2 );
     switch (pos) {
       case 'top':
         cards.forEach((card, i, arr) => {
-          const prevValue = i > 0 ? arr[i - 1].getValue() : -1000;
-          const nextValue = i < (arr.length - 1) ? arr[i + 1].getValue() : +1000;
-          if (prevValue === (card.getValue() - 1) && nextValue === (card.getValue() + 1)) {
+          const prevValue = i > 0 ? arr[i - 1] : -1000;
+          const nextValue = i < (arr.length - 1) ? arr[i + 1] : +1000;
+          if (prevValue === (card - 1) && nextValue === (card + 1)) {
             // au milieu
             result += '';
           } else {
@@ -252,27 +256,27 @@ export default class Drawer {
         break;
       case 'mid':
         cards.forEach((card, i, arr) => {
-          const prevValue = i > 0 ? arr[i - 1].getValue() : -1000;
-          const nextValue = i < (arr.length - 1) ? arr[i + 1].getValue() : +1000;
-          if (prevValue === (card.getValue() - 1) && nextValue !== (card.getValue() + 1)) {
+          const prevValue = i > 0 ? arr[i - 1] : -1000;
+          const nextValue = i < (arr.length - 1) ? arr[i + 1] : +1000;
+          if (prevValue === (card - 1) && nextValue !== (card + 1)) {
             // à la fin d'une série
-            result += '.' + card.toString().substr(1, 4);
-          } else if (prevValue === (card.getValue() - 1) && nextValue === (card.getValue() + 1)) {
+            result += '.' + (card <= 9 ? '│ ' + card + '│' : '│'  + card + '│').substr(1, 4);
+          } else if (prevValue === (card - 1) && nextValue === (card + 1)) {
             // au milieu d'une série
             result += '';
-          } else if (prevValue !== (card.getValue() - 1) && nextValue === (card.getValue() + 1)) {
+          } else if (prevValue !== (card - 1) && nextValue === (card + 1)) {
             // au début d'une série
-            result += card.toString().substr(0, 3) + '.';
+            result += (card <= 9 ? '│ ' + card + '│' : '│'  + card + '│').substr(0, 3) + '.';
           } else {
-            result += card.toString();
+            result += (card <= 9 ? '│ ' + card + '│' : '│'  + card + '│');
           }
         });
         break;
       case 'bot':
         cards.forEach((card, i , arr) => {
-          const prevValue = i > 0 ? arr[i - 1].getValue() : -1000;
-          const nextValue = i < (arr.length - 1) ? arr[i + 1].getValue() : +1000;
-          if (prevValue === (card.getValue() - 1) && nextValue === (card.getValue() + 1)) {
+          const prevValue = i > 0 ? arr[i - 1] : -1000;
+          const nextValue = i < (arr.length - 1) ? arr[i + 1] : +1000;
+          if (prevValue === (card - 1) && nextValue === (card + 1)) {
             // au milieu
             result += '';
           } else {

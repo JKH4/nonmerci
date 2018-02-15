@@ -1,4 +1,4 @@
-import { ICurrentBoardState } from '../core/board-state';
+import { IPlayerBoardState } from '../core/board';
 import { GameAction } from '../core/game';
 
 export default class Bot {
@@ -21,7 +21,7 @@ export default class Bot {
 
   public getBotInfo = () => ({ brainType: this.brainType });
 
-  public proposeAction = (boardstate: ICurrentBoardState): GameAction => {
+  public proposeAction = (boardstate: IPlayerBoardState): GameAction => {
     switch (this.brainType) {
       case BrainOptions.Random:
         return this.proposeActionRandom();

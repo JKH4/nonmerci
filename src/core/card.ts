@@ -7,7 +7,7 @@ export default class Card {
 
   constructor(value: number) {
     // Validation de la valeur
-    if (value < 3 || value > 35) {
+    if (!value || value < 3 || value > 35) {
       throw new Error ('INVALID_CARD_VALUE');
     }
     this.value = value;
