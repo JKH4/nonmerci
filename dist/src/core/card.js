@@ -10,8 +10,9 @@ class Card {
         this.toString = () => this.value <= 9
             ? '│ ' + this.value + '│'
             : '│' + this.value + '│';
+        this.clone = () => new Card(this.value);
         // Validation de la valeur
-        if (value < 3 || value > 35) {
+        if (!value || value < 3 || value > 35) {
             throw new Error('INVALID_CARD_VALUE');
         }
         this.value = value;

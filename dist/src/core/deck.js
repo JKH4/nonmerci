@@ -6,10 +6,12 @@ const card_1 = require("./card");
  * - Error ('EMPTY_DECK')
  */
 class Deck {
-    constructor(size, cards) {
+    constructor(options) {
         this.getSize = () => this.deck.length;
-        if (cards) {
-            this.deck = cards;
+        if (options.cardValues) {
+            this.deck = options.cardValues.map((v) => new card_1.default(v));
+            // } else if (options.cards) {
+            //   this.deck = options.cards;
         }
         else {
             const allCards = [];
@@ -17,7 +19,7 @@ class Deck {
                 allCards.push(new card_1.default(i));
             }
             this.shuffle(allCards);
-            const deckSize = size !== undefined ? size : 24;
+            const deckSize = options.size !== undefined ? options.size : 24;
             // const minValue = 3;
             this.deck = [];
             for (let i = 0; i < deckSize; i++) {
@@ -32,6 +34,13 @@ class Deck {
         else {
             return this.deck.pop();
         }
+    }
+    clone() {
+        // const cloneDeck = this.deck.map((c) => c.clone());
+        return new Deck({ size: 0, cardValues: this.deck.map((c) => c.getValue()) });
+    }
+    getState() {
+        return this.deck.map((c) => c.getValue());
     }
     /**
      * Shuffles array in place. ES6 version

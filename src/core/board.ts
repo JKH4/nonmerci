@@ -6,6 +6,7 @@ import { IGameOptions } from './game';
  * Error list:
  * - Error ('INVALID_NUMBER_OF_PLAYER')
  * - Error ('INVALID_BOARD_STATE')
+ * - Error ('INVALID_CONTRUCTOR_OPTIONS')
  * - Error ('INVALID_PLAYER')
  * - Error ('NOT_ENOUGH_TOKENS')
  * - Error ('NO_MORE_CARD')
@@ -16,13 +17,19 @@ export default class Board {
 
   /***
    * Constructor
+   * options:
+   *  .fullBoardState: P0: recréé un Board dans un état totalement défini (joueurs, decks, jetons, cartes, tours, etc.)
+   *  .players: P1: initialise un Board dans un état 'initial' a partir de la liste de joueurs
+   *                (joueurs, deck aléatoire de 24 cartes, 11 jetons par joueurs)
    */
   constructor(options: {
     fullBoardState?: IFullBoardState,
-    // deck?: Deck,
     players?: string[],
   }) {
     if (options.fullBoardState) {
+      if (!this.isStateValid(options.fullBoardState)) {
+        throw new Error('INVALID_BOARD_STATE');
+      }
       this.state = {
         activePlayer: options.fullBoardState.activePlayer,
         board: {
@@ -37,7 +44,7 @@ export default class Board {
         playerTokens: options.fullBoardState.playerTokens,
         turn: options.fullBoardState.turn,
       };
-    } else {
+    } else if (options.players) {
       if (options.players.length === 0 || options.players.length > 5) {
         throw new Error('INVALID_NUMBER_OF_PLAYER');
       }
@@ -53,6 +60,8 @@ export default class Board {
         playerTokens: options.players.map((p) => ({ name: p, hiddenTokens: 11 })),
         turn: 1,
       };
+    } else {
+      throw new Error('INVALID_CONTRUCTOR_OPTIONS');
     }
   }
 
@@ -158,9 +167,6 @@ export default class Board {
 
   //#region Méthodes privées ############################################################
   private getCardScore(player: string): number {
-    // console.log('getCardScore(' + player + ') = ', this.state.board.playerCards.find((p) => p.name === player).cards
-    //   .map((card: Card) => card.getValue())
-    //   .sort((v1, v2) => v1 - v2));
     return this.state.board.playerCards.find((p) => p.name === player).cards
       .map((card: Card) => card.getValue())
       .sort((v1, v2) => v1 - v2)
@@ -168,26 +174,24 @@ export default class Board {
         return totalScore + (array[i] === array[i - 1] + 1 ? 0 : currentValue);
       }, 0);
   }
+  private isStateValid(state: IFullBoardState): boolean {
+    if (!state.board.playerCards.find((p) => p.name === state.activePlayer)) {
+      return false;
+    }
+    if (!state.board.playerCards.every((pc) => state.playerTokens.find((pt) => pc.name === pt.name) !== undefined )) {
+      return false;
+    }
+    const allCards = state.board.deck
+      .concat([state.board.visibleCard])
+      .concat(state.board.playerCards.map((p) => p.cards).reduce((prev, curr) => prev.concat(curr), []));
+    console.log(allCards, new Set(allCards));
+    if (allCards.length !== new Set(allCards).size) {
+      return false;
+    }
+    return true;
+  }
   //#endregion Méthodes privées ---------------------------------------------------------
 }
-
-// const defaultFullBoardState: IFullBoardState = {
-//   activePlayer: 'Joueur1',
-//   board: {
-//     deck: new Deck({}).getState(),
-//     visibleCard: number;
-//     visibleTokens: number;
-//     playerCards: Array<{
-//       name: string;
-//       cards: number[];
-//     }>;
-//   };
-//   playerTokens: Array<{
-//     name: string;
-//     hiddenTokens: number;
-//   }>;
-//   turn: number;
-// };
 
 interface IBoardState {
   activePlayer: string;

@@ -38,10 +38,7 @@ class NomMerci {
                 return nameWithId;
             }
         };
-        // console.log('#####################################################################');
-        // console.log('###############              NON MERCI               ################');
-        // console.log('#####################################################################');
-        // this.program = new commander();
+        //
     }
     /************************************************************************************************
      * Public methods
@@ -51,14 +48,10 @@ class NomMerci {
         return new game_1.default(options);
     }
     main() {
-        /////////////// INIT stepCollection
-        const nmSteps = this.initSteps();
-        /////////////// INIT Workflow
-        const nonMerciWorkflow = new workflow_1.default(nmSteps);
-        /////////////// INIT Workflow
-        this.drawer = new drawer_1.default();
-        /////////////// START
-        nonMerciWorkflow.startWorkflow();
+        const nmSteps = this.initSteps(); //////////////// INIT stepCollection
+        const nonMerciWorkflow = new workflow_1.default(nmSteps); // INIT Workflow
+        this.drawer = new drawer_1.default(); ////////////////////// INIT Workflow
+        nonMerciWorkflow.startWorkflow(); //////////////// START
     }
     /************************************************************************************************
      * Privates methods
@@ -233,17 +226,19 @@ class NomMerci {
             type: workflow_1.StepType.NORMAL,
             payload: (iteration) => new Promise((resolve, reject) => {
                 const actionId = 'action_playNext';
-                const boardstate = this.state.game.getBoardState().getCurrentBoardState();
-                const player = boardstate.activePlayer.name;
+                const boardstate = this.state.game.getBoard().getPlayerState();
+                const player = boardstate.activePlayer;
                 try {
                     console.log(this.drawer.drawBoard({ maxWidth: MAX_WIDTH }, boardstate));
                 }
                 catch (e) {
                     console.error(e);
-                    const playerTokens = boardstate.activePlayer.tokens;
-                    const playerCards = boardstate.activePlayer.cards.map((c) => c.toString());
-                    const card = boardstate.deck.visibleCard;
-                    const cardTokens = boardstate.deck.visibleCardTokens; // .getCurrentTokenBagSize();
+                    const playerTokens = boardstate.privateData.hiddenTokens;
+                    const playerCards = boardstate.board.playerCards
+                        .find((p) => p.name === boardstate.activePlayer).cards
+                        .map((value) => value <= 9 ? '│ ' + value + '│' : '│' + value + '│');
+                    const card = boardstate.board.visibleCard;
+                    const cardTokens = boardstate.board.visibleTokens; // .getCurrentTokenBagSize();
                     console.log('############## UX du pauvre ##########################################');
                     console.log('# Joueur actif: ' + player + ', (' + playerTokens + ' jetons)');
                     console.log('# Cartes du joueur: ', playerCards);

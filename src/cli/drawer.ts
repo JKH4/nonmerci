@@ -150,7 +150,8 @@ export default class Drawer {
         }
         break;
       case 'mid':
-        result += '  \\ ' + (tokens <= 9 ? ' ' : '') + tokens + ' /       ' + visibleCard.toString();
+        result += '  \\ ' + (tokens <= 9 ? ' ' : '') + tokens + ' /       '
+          + (visibleCard <= 9 ? '│ ' + visibleCard + '│' : '│'  + visibleCard + '│');
         for (let i = 0; i < deckSize; i++) {
           result += '│';
         }

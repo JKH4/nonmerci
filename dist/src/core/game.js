@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const board_state_1 = require("./board-state");
+const board_1 = require("./board");
 /**
  * Error List:
  * - Error ('INVALID_NUMBER_OF_PLAYERS')
@@ -17,7 +17,7 @@ class Game {
         this.getStatus = () => this.status;
         this.getPlayers = () => this.players;
         // public getCurrentTurn = (): number => this.currentTurn;
-        this.getBoardState = () => this.currentBoardState;
+        this.getBoard = () => this.board;
         this.getScores = () => this.scores;
         // Extraction des options par clonage ou par défaut
         const optionsCopy = options
@@ -38,7 +38,7 @@ class Game {
         if (this.status === GameStatus.Created) {
             this.status = GameStatus.OnGoing;
             // this.currentTurn = 1;
-            this.currentBoardState = new board_state_1.default(this.players);
+            this.board = new board_1.default({ players: this.players });
         }
         else {
             throw new Error('INVALID_GAME_STATUS');
@@ -48,11 +48,11 @@ class Game {
         if (this.status === GameStatus.OnGoing) {
             this.scores = [];
             this.getPlayers().forEach((player) => {
-                this.scores.push([player, this.getBoardState().getFinalScore(player)]);
+                this.scores.push([player, this.getBoard().getFinalScore(player)]);
             });
             this.scores.sort((s1, s2) => s1[1] - s2[1]);
             this.status = GameStatus.Terminated;
-            this.currentBoardState = undefined;
+            this.board = undefined;
         }
         else {
             throw new Error('INVALID_GAME_STATUS');
@@ -62,17 +62,17 @@ class Game {
         if (this.status === GameStatus.OnGoing) {
             if (action === GameAction.Pay) {
                 try {
-                    this.getBoardState().pay();
+                    this.getBoard().pay();
                 }
                 catch (err) {
                     throw err;
                 }
-                this.getBoardState().switchActivePlayer();
+                this.getBoard().switchActivePlayer();
             }
             else {
                 // action par défaut
                 try {
-                    this.getBoardState().take();
+                    this.getBoard().take();
                 }
                 catch (e) {
                     const err = e;
@@ -82,7 +82,7 @@ class Game {
                     }
                 }
             }
-            this.getBoardState().incrementTurn();
+            this.getBoard().incrementTurn();
         }
         else {
             throw new Error('INVALID_GAME_STATUS');

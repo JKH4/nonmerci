@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const bot_1 = require("../../src/bot/bot");
-const board_state_1 = require("../../src/core/board-state");
+const board_1 = require("../../src/core/board");
 const game_1 = require("../../src/core/game");
 describe('Gérer un Bot:', () => {
     it('Créé un bot avec une IA random', () => {
@@ -11,15 +11,15 @@ describe('Gérer un Bot:', () => {
     });
     it('Propose une action de jeu en fonction d\'un état de plateau donné', () => {
         const myBot = new bot_1.default(bot_1.BrainOptions.Random);
-        const board = new board_state_1.default(['Anna', 'Bob', 'Chris']);
-        const boardstate = board.getCurrentBoardState();
+        const board = new board_1.default({ players: ['Anna', 'Bob', 'Chris'] });
+        const boardstate = board.getPlayerState();
         const proposedAction = myBot.proposeAction(boardstate);
         expect(game_1.GameAction[proposedAction]).toEqual(proposedAction);
     });
     it('Propose une action aléatoire si le type d\'IA est random', () => {
         const myBot = new bot_1.default(bot_1.BrainOptions.Random);
-        const board = new board_state_1.default(['Anna', 'Bob', 'Chris']);
-        const boardstate = board.getCurrentBoardState();
+        const board = new board_1.default({ players: ['Anna', 'Bob', 'Chris'] });
+        const boardstate = board.getPlayerState();
         let nbTake = 0;
         let nbPay = 0;
         const nbActions = 100;
@@ -34,8 +34,8 @@ describe('Gérer un Bot:', () => {
     });
     it('Propose toujours une action TAKE si le type d\'IA est Take', () => {
         const myBot = new bot_1.default(bot_1.BrainOptions.Take);
-        const board = new board_state_1.default(['Anna', 'Bob', 'Chris']);
-        const boardstate = board.getCurrentBoardState();
+        const board = new board_1.default({ players: ['Anna', 'Bob', 'Chris'] });
+        const boardstate = board.getPlayerState();
         let nbTake = 0;
         let nbPay = 0;
         const nbActions = 100;

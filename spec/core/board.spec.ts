@@ -63,9 +63,116 @@ describe('Gestion du plateau', () => {
       expect(fullState).toEqual(fullBoardState);
     });
 
-    xit('Renvoie une erreur l\'état du plateau n\'est pas valide', () => {
-      expect('Test a implémenter').toBe('Test implémenté');
+    it('Renvoie une erreur l\'état du plateau n\'est pas valide (activePlayer incohérent)', () => {
+      // expect('Test a implémenter').toBe('Test implémenté');
+      const invalidState: IFullBoardState = {
+        activePlayer: 'JoueurX', // PAS DANS LES LISTES CI-DESSOUS
+        board: {
+          deck: [],
+          playerCards: [
+            { name: 'Joueur1', cards: [] },
+            { name: 'Joueur2', cards: [] },
+            { name: 'Joueur3', cards: [] },
+          ],
+          visibleCard: 29,
+          visibleTokens: 4,
+        },
+        playerTokens: [
+          { name: 'Joueur1', hiddenTokens: 11 },
+          { name: 'Joueur2', hiddenTokens: 11 },
+          { name: 'Joueur3', hiddenTokens: 11 },
+        ],
+        turn: 10,
+      };
+      expect(() => board = new Board({ fullBoardState: invalidState })).toThrowError('INVALID_BOARD_STATE');
     });
+
+    it('Renvoie une erreur l\'état du plateau n\'est pas valide (playerCards/Tokens incohérents)', () => {
+      const invalidState: IFullBoardState = {
+        activePlayer: 'Joueur1',
+        board: {
+          deck: [],
+          playerCards: [
+            { name: 'Joueur1', cards: [] },
+            { name: 'Joueur2', cards: [] },
+            { name: 'JoueurX', cards: [] }, // INCOHERENT
+          ],
+          visibleCard: 29,
+          visibleTokens: 4,
+        },
+        playerTokens: [
+          { name: 'Joueur1', hiddenTokens: 11 },
+          { name: 'Joueur2', hiddenTokens: 11 },
+          { name: 'Joueur3', hiddenTokens: 11 },
+        ],
+        turn: 10,
+      };
+      expect(() => board = new Board({ fullBoardState: invalidState })).toThrowError('INVALID_BOARD_STATE');
+    });
+
+    it('Renvoie une erreur l\'état du plateau n\'est pas valide (cartes en double)', () => {
+      const invalidState: IFullBoardState = {
+        activePlayer: 'Joueur1',
+        board: {
+          deck: [3], // DOUBLON
+          playerCards: [
+            { name: 'Joueur1', cards: [3] }, // DOUBLON
+            { name: 'Joueur2', cards: [] },
+            { name: 'Joueur3', cards: [] },
+          ],
+          visibleCard: 29,
+          visibleTokens: 4,
+        },
+        playerTokens: [
+          { name: 'Joueur1', hiddenTokens: 11 },
+          { name: 'Joueur2', hiddenTokens: 11 },
+          { name: 'Joueur3', hiddenTokens: 11 },
+        ],
+        turn: 10,
+      };
+      const invalidState2: IFullBoardState = {
+        activePlayer: 'Joueur1',
+        board: {
+          deck: [3],
+          playerCards: [
+            { name: 'Joueur1', cards: [29] }, // DOUBLON
+            { name: 'Joueur2', cards: [] },
+            { name: 'Joueur3', cards: [] },
+          ],
+          visibleCard: 29, // DOUBLON
+          visibleTokens: 4,
+        },
+        playerTokens: [
+          { name: 'Joueur1', hiddenTokens: 11 },
+          { name: 'Joueur2', hiddenTokens: 11 },
+          { name: 'Joueur3', hiddenTokens: 11 },
+        ],
+        turn: 10,
+      };
+      const invalidState3: IFullBoardState = {
+        activePlayer: 'Joueur1',
+        board: {
+          deck: [3], // DOUBLON
+          playerCards: [
+            { name: 'Joueur1', cards: [29] },
+            { name: 'Joueur2', cards: [] },
+            { name: 'Joueur3', cards: [] },
+          ],
+          visibleCard: 3, // DOUBLON
+          visibleTokens: 4,
+        },
+        playerTokens: [
+          { name: 'Joueur1', hiddenTokens: 11 },
+          { name: 'Joueur2', hiddenTokens: 11 },
+          { name: 'Joueur3', hiddenTokens: 11 },
+        ],
+        turn: 10,
+      };
+      expect(() => board = new Board({ fullBoardState: invalidState })).toThrowError('INVALID_BOARD_STATE');
+      expect(() => board = new Board({ fullBoardState: invalidState2 })).toThrowError('INVALID_BOARD_STATE');
+      expect(() => board = new Board({ fullBoardState: invalidState3 })).toThrowError('INVALID_BOARD_STATE');
+    });
+
   });
 
   describe('Accéder aux informations du plateau de jeu vu par un joueur:', () => {
