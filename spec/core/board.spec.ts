@@ -1,6 +1,7 @@
 import Board, { IFullBoardState, IPlayerBoardState } from '../../src/core/board';
 import Card from '../../src/core/card';
 import Deck from '../../src/core/deck';
+import { GameAction } from '../../src/core/game';
 
 describe('Gestion du plateau', () => {
   // **************************************************************************************
@@ -466,6 +467,68 @@ describe('Gestion du plateau', () => {
 
       const playerScore = fixedBoard.getPlayerState().privateData.currentScore;
       expect(playerScore).toEqual(5 + 25 - 11);
+    });
+  });
+  describe('interface MCTS', () => {
+    let board: Board;
+
+    beforeEach(() => {
+      board = new Board({players: ['Anna', 'Bob', 'David']});
+    });
+
+    it('Renvoi les 2 actions possibles en début de partie', () => {
+      expect(board.getPossibleMoves()).toContain(GameAction.Take);
+      expect(board.getPossibleMoves()).toContain(GameAction.Pay);
+    });
+
+    it('Renvoi l\'action possible TAKE si le joueur actif n\'a pas de jeton (et une carte est visible)', () => {
+      const fullBoardState: IFullBoardState = {
+        activePlayer: 'Bob',
+        board: {
+          deck: [4, 5, 6],
+          playerCards: [
+            { name: 'Anna', cards: [] },
+            { name: 'Bob', cards: [] },
+            { name: 'David', cards: [] },
+          ],
+          visibleCard: 3,
+          visibleTokens: 0,
+        },
+        playerTokens: [
+          { name: 'Anna', hiddenTokens: 11 },
+          { name: 'Bob', hiddenTokens: 0 },
+          { name: 'David', hiddenTokens: 11 },
+        ],
+        turn: 30,
+      };
+      const fixedBoard = new Board({fullBoardState});
+      expect(fixedBoard.getPossibleMoves()).toEqual([GameAction.Take]);
+      // expect(board.getPossibleMoves()).toContain(GameAction.Pay);
+    });
+
+    it('Renvoi rien? si il ny a pas de carte visible)', () => {
+      const fullBoardState: IFullBoardState = {
+        activePlayer: 'Bob',
+        board: {
+          deck: [],
+          playerCards: [
+            { name: 'Anna', cards: [] },
+            { name: 'Bob', cards: [] },
+            { name: 'David', cards: [] },
+          ],
+          visibleCard: undefined,
+          visibleTokens: 0,
+        },
+        playerTokens: [
+          { name: 'Anna', hiddenTokens: 11 },
+          { name: 'Bob', hiddenTokens: 11 },
+          { name: 'David', hiddenTokens: 11 },
+        ],
+        turn: 30,
+      };
+      const fixedBoard = new Board({fullBoardState});
+      expect(fixedBoard.getPossibleMoves()).toEqual([]);
+      // expect(board.getPossibleMoves()).toContain(GameAction.Pay);
     });
   });
 });

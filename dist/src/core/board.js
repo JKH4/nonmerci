@@ -2,20 +2,28 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const card_1 = require("./card");
 const deck_1 = require("./deck");
+const game_1 = require("./game");
+const mcts_game_1 = require("../mcts/mcts-game");
 /**
  * Error list:
  * - Error ('INVALID_NUMBER_OF_PLAYER')
  * - Error ('INVALID_BOARD_STATE')
+ * - Error ('INVALID_CONTRUCTOR_OPTIONS')
  * - Error ('INVALID_PLAYER')
  * - Error ('NOT_ENOUGH_TOKENS')
  * - Error ('NO_MORE_CARD')
  * - Error ('END_OF_GAME')
  */
-class Board {
+class Board extends mcts_game_1.MctsGame {
     /***
      * Constructor
+     * options:
+     *  .fullBoardState: P0: recréé un Board dans un état totalement défini (joueurs, decks, jetons, cartes, tours, etc.)
+     *  .players: P1: initialise un Board dans un état 'initial' a partir de la liste de joueurs
+     *                (joueurs, deck aléatoire de 24 cartes, 11 jetons par joueurs)
      */
     constructor(options) {
+        super();
         //#region Getters #####################################################################
         this.getPlayerState = (player) => {
             if (!player) {
@@ -36,7 +44,7 @@ class Board {
                     visibleTokens: this.state.board.visibleTokens,
                 },
                 privateData: {
-                    currentScore: this.getFinalScore(player),
+                    currentScore: this.getPlayerScore(player),
                     hiddenTokens: this.state.playerTokens.find((p) => p.name === player).hiddenTokens,
                     playerName: player,
                 },
@@ -57,7 +65,13 @@ class Board {
                 turn: this.state.turn,
             };
         };
+        if (!options) {
+            options = { players: ['J1', 'J2', 'J3'] };
+        }
         if (options.fullBoardState) {
+            if (!this.isStateValid(options.fullBoardState)) {
+                throw new Error('INVALID_BOARD_STATE');
+            }
             this.state = {
                 activePlayer: options.fullBoardState.activePlayer,
                 board: {
@@ -73,7 +87,7 @@ class Board {
                 turn: options.fullBoardState.turn,
             };
         }
-        else {
+        else if (options.players) {
             if (options.players.length === 0 || options.players.length > 5) {
                 throw new Error('INVALID_NUMBER_OF_PLAYER');
             }
@@ -90,9 +104,20 @@ class Board {
                 turn: 1,
             };
         }
+        else {
+            throw new Error('INVALID_CONTRUCTOR_OPTIONS');
+        }
     }
-    getFinalScore(player) {
-        return this.getCardScore(player) - this.state.playerTokens.find((p) => p.name === player).hiddenTokens;
+    getPlayerScore(player) {
+        return this.getPlayerCardScore(player) - this.state.playerTokens.find((p) => p.name === player).hiddenTokens;
+    }
+    getScores() {
+        const scores = [];
+        this.state.playerTokens.forEach(({ name, hiddenTokens }) => {
+            scores.push([name, this.getPlayerCardScore(name) - hiddenTokens]);
+        });
+        scores.sort((s1, s2) => s1[1] - s2[1]);
+        return scores;
     }
     //#endregion Getters ------------------------------------------------------------------
     //#region Actions #####################################################################
@@ -147,17 +172,64 @@ class Board {
         }
     }
     //#endregion Actions ------------------------------------------------------------------
+    //#region Actions MCTS ################################################################
+    getPossibleMoves() {
+        const moves = [];
+        if (this.state.board.visibleCard) {
+            moves.push(game_1.GameAction.Take);
+            if (this.state.playerTokens.find((p) => p.name === this.state.activePlayer).hiddenTokens > 0) {
+                moves.push(game_1.GameAction.Pay);
+            }
+        }
+        return moves;
+    }
+    getCurrentPlayer() {
+        return this.state.activePlayer;
+    }
+    performMove(action) {
+        if (action === game_1.GameAction.Pay) {
+            this.pay();
+            this.switchActivePlayer();
+        }
+        else {
+            // action par défaut
+            this.take();
+        }
+        this.incrementTurn();
+    }
+    getWinner() {
+        if (this.state.board.visibleCard === undefined) {
+            return this.getScores()[0][0];
+        }
+        else {
+            return null;
+        }
+    }
+    //#endregion Actions MCTS -------------------------------------------------------------
     //#region Méthodes privées ############################################################
-    getCardScore(player) {
-        // console.log('getCardScore(' + player + ') = ', this.state.board.playerCards.find((p) => p.name === player).cards
-        //   .map((card: Card) => card.getValue())
-        //   .sort((v1, v2) => v1 - v2));
+    getPlayerCardScore(player) {
         return this.state.board.playerCards.find((p) => p.name === player).cards
             .map((card) => card.getValue())
             .sort((v1, v2) => v1 - v2)
             .reduce((totalScore, currentValue, i, array) => {
             return totalScore + (array[i] === array[i - 1] + 1 ? 0 : currentValue);
         }, 0);
+    }
+    isStateValid(state) {
+        if (!state.board.playerCards.find((p) => p.name === state.activePlayer)) {
+            return false;
+        }
+        if (!state.board.playerCards.every((pc) => state.playerTokens.find((pt) => pc.name === pt.name) !== undefined)) {
+            return false;
+        }
+        const allCards = state.board.deck
+            .concat([state.board.visibleCard])
+            .concat(state.board.playerCards.map((p) => p.cards).reduce((prev, curr) => prev.concat(curr), []));
+        console.log(allCards, new Set(allCards));
+        if (allCards.length !== new Set(allCards).size) {
+            return false;
+        }
+        return true;
     }
 }
 exports.default = Board;

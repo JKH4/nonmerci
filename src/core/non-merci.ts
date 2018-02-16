@@ -223,7 +223,8 @@ export default class NomMerci {
       type: StepType.NORMAL,
       payload: (iteration): Promise<IActionResult> => new Promise ((resolve, reject) => {
         const actionId = 'action_playNext';
-        const boardstate = this.state.game.getBoard().getPlayerState();
+        const board = this.state.game.getBoard();
+        const boardstate = board.getPlayerState();
         const player = boardstate.activePlayer;
         try {
           console.log(this.drawer.drawBoard({ maxWidth: MAX_WIDTH}, boardstate));
@@ -242,7 +243,7 @@ export default class NomMerci {
           console.log('######################################################################');
         }
         if (player.startsWith('bot')) {
-          const botAction = this.state.bots[player].proposeAction(boardstate);
+          const botAction = this.state.bots[player].proposeAction(board);
           const answer = botAction === GameAction.Pay ? 'p' : 't';
           // console.log('# Action choisi par ' + player + ' (bot) : '
           //  + botAction + '(workflow answer: ' + answer + ')');
@@ -274,6 +275,7 @@ export default class NomMerci {
       },
       onReject: (err: Error) => {
         console.log('stepPlayNext onError: ', err.message);
+        console.log('stepPlayNext onError: ', err.stack);
         return stepPlayNext;
       },
     };
@@ -323,6 +325,9 @@ export default class NomMerci {
       throw new Error('INVALID_BOT_NAME');
     } else if (name.indexOf('random') > -1) {
       this.state.bots[nameWithId] = new Bot(BrainOptions.Random);
+      return nameWithId;
+    } else if (name.indexOf('mcts1') > -1) {
+      this.state.bots[nameWithId] = new Bot(BrainOptions.Mcts1);
       return nameWithId;
     } else if (name.indexOf('take') > -1) {
       this.state.bots[nameWithId] = new Bot(BrainOptions.Take);

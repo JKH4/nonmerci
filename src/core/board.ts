@@ -29,6 +29,9 @@ export default class Board extends MctsGame {
     players?: string[],
   }) {
     super();
+    if (!options) {
+      options = { players: ['J1', 'J2', 'J3'] };
+    }
     if (options.fullBoardState) {
       if (!this.isStateValid(options.fullBoardState)) {
         throw new Error('INVALID_BOARD_STATE');
@@ -175,14 +178,16 @@ export default class Board extends MctsGame {
       }
     }
   }
+  //#endregion Actions ------------------------------------------------------------------
 
+  //#region Actions MCTS ################################################################
   public getPossibleMoves(): GameAction[] {
     const moves: GameAction[] = [];
     if (this.state.board.visibleCard) {
       moves.push(GameAction.Take);
-    }
-    if (this.state.playerTokens.find((p) => p.name === this.state.activePlayer).hiddenTokens > 0) {
-      moves.push(GameAction.Pay);
+      if (this.state.playerTokens.find((p) => p.name === this.state.activePlayer).hiddenTokens > 0) {
+        moves.push(GameAction.Pay);
+      }
     }
     return moves;
   }
@@ -195,7 +200,17 @@ export default class Board extends MctsGame {
       this.switchActivePlayer();
     } else {
       // action par défaut
+      try {
         this.take();
+      } catch (e) {
+        const err: Error = e;
+        if (err.message === 'END_OF_GAME') {
+          console.log('performMove/END_OF_GAME');
+          console.log(this.getScores());
+        } else {
+          throw e;
+        }
+      }
     }
     this.incrementTurn();
   }
@@ -206,7 +221,7 @@ export default class Board extends MctsGame {
       return null;
     }
   }
-  //#endregion Actions ------------------------------------------------------------------
+  //#endregion Actions MCTS -------------------------------------------------------------
 
   //#region Méthodes privées ############################################################
   private getPlayerCardScore(player: string): number {

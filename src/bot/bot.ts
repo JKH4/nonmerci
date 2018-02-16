@@ -1,5 +1,7 @@
-import { IPlayerBoardState } from '../core/board';
+import Board from '../core/board';
 import { GameAction } from '../core/game';
+
+import MCTS from '../mcts/mcts';
 
 export default class Bot {
   private brainType: BrainOptions;
@@ -7,6 +9,9 @@ export default class Bot {
     switch (brainType) {
       case BrainOptions.Random:
         this.brainType = BrainOptions.Random;
+        break;
+      case BrainOptions.Mcts1:
+        this.brainType = BrainOptions.Mcts1;
         break;
       case BrainOptions.Take:
         this.brainType = BrainOptions.Take;
@@ -21,10 +26,15 @@ export default class Bot {
 
   public getBotInfo = () => ({ brainType: this.brainType });
 
-  public proposeAction = (boardstate: IPlayerBoardState): GameAction => {
+  public proposeAction = (board: Board): GameAction => {
     switch (this.brainType) {
       case BrainOptions.Random:
         return this.proposeActionRandom();
+      case BrainOptions.Mcts1:
+        const mcts = new MCTS(board);
+        const move = mcts.selectMove();
+        console.log('proposeAction', move);
+        return move;
       case BrainOptions.Take:
         return GameAction.Take;
       default:
@@ -38,4 +48,5 @@ export default class Bot {
 export enum BrainOptions {
   Random = 'Random',
   Take = 'Take',
+  Mcts1 = 'Mcts1',
 }

@@ -48,7 +48,7 @@ class Game {
         if (this.status === GameStatus.OnGoing) {
             this.scores = [];
             this.getPlayers().forEach((player) => {
-                this.scores.push([player, this.getBoard().getFinalScore(player)]);
+                this.scores.push([player, this.getBoard().getPlayerScore(player)]);
             });
             this.scores.sort((s1, s2) => s1[1] - s2[1]);
             this.status = GameStatus.Terminated;

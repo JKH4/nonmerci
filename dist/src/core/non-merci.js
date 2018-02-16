@@ -28,6 +28,10 @@ class NomMerci {
                 this.state.bots[nameWithId] = new bot_1.default(bot_1.BrainOptions.Random);
                 return nameWithId;
             }
+            else if (name.indexOf('mcts1') > -1) {
+                this.state.bots[nameWithId] = new bot_1.default(bot_1.BrainOptions.Mcts1);
+                return nameWithId;
+            }
             else if (name.indexOf('take') > -1) {
                 this.state.bots[nameWithId] = new bot_1.default(bot_1.BrainOptions.Take);
                 return nameWithId;
@@ -226,7 +230,8 @@ class NomMerci {
             type: workflow_1.StepType.NORMAL,
             payload: (iteration) => new Promise((resolve, reject) => {
                 const actionId = 'action_playNext';
-                const boardstate = this.state.game.getBoard().getPlayerState();
+                const board = this.state.game.getBoard();
+                const boardstate = board.getPlayerState();
                 const player = boardstate.activePlayer;
                 try {
                     console.log(this.drawer.drawBoard({ maxWidth: MAX_WIDTH }, boardstate));
@@ -246,7 +251,7 @@ class NomMerci {
                     console.log('######################################################################');
                 }
                 if (player.startsWith('bot')) {
-                    const botAction = this.state.bots[player].proposeAction(boardstate);
+                    const botAction = this.state.bots[player].proposeAction(board);
                     const answer = botAction === game_1.GameAction.Pay ? 'p' : 't';
                     // console.log('# Action choisi par ' + player + ' (bot) : '
                     //  + botAction + '(workflow answer: ' + answer + ')');
@@ -282,6 +287,7 @@ class NomMerci {
             },
             onReject: (err) => {
                 console.log('stepPlayNext onError: ', err.message);
+                console.log('stepPlayNext onError: ', err.stack);
                 return stepPlayNext;
             },
         };
