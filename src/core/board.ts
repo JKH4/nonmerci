@@ -1,6 +1,8 @@
 import Card from './card';
 import Deck from './deck';
-import { IGameOptions } from './game';
+import Game, { GameAction, IGameOptions } from './game';
+
+import { MctsGame } from '../mcts/mcts-game';
 
 /**
  * Error list:
@@ -12,7 +14,7 @@ import { IGameOptions } from './game';
  * - Error ('NO_MORE_CARD')
  * - Error ('END_OF_GAME')
  */
-export default class Board {
+export default class Board extends MctsGame {
   private state: IBoardState;
 
   /***
@@ -26,6 +28,7 @@ export default class Board {
     fullBoardState?: IFullBoardState,
     players?: string[],
   }) {
+    super();
     if (options.fullBoardState) {
       if (!this.isStateValid(options.fullBoardState)) {
         throw new Error('INVALID_BOARD_STATE');
@@ -85,7 +88,7 @@ export default class Board {
         visibleTokens: this.state.board.visibleTokens,
       },
       privateData: {
-        currentScore: this.getFinalScore(player),
+        currentScore: this.getPlayerScore(player),
         hiddenTokens: this.state.playerTokens.find((p) => p.name === player).hiddenTokens,
         playerName: player,
       },
@@ -108,8 +111,17 @@ export default class Board {
     };
   }
 
-  public getFinalScore(player: string): number {
-    return this.getCardScore(player) - this.state.playerTokens.find((p) => p.name === player).hiddenTokens;
+  public getPlayerScore(player: string): number {
+    return this.getPlayerCardScore(player) - this.state.playerTokens.find((p) => p.name === player).hiddenTokens;
+  }
+
+  public getScores(): Array<[string, number]> {
+    const scores: Array<[string, number]> = [];
+    this.state.playerTokens.forEach(({ name, hiddenTokens }) => {
+      scores.push([name, this.getPlayerCardScore(name) - hiddenTokens]);
+    });
+    scores.sort((s1: [string, number], s2: [string, number]) => s1[1] - s2[1]);
+    return scores;
   }
   //#endregion Getters ------------------------------------------------------------------
 
@@ -163,10 +175,41 @@ export default class Board {
       }
     }
   }
+
+  public getPossibleMoves(): GameAction[] {
+    const moves: GameAction[] = [];
+    if (this.state.board.visibleCard) {
+      moves.push(GameAction.Take);
+    }
+    if (this.state.playerTokens.find((p) => p.name === this.state.activePlayer).hiddenTokens > 0) {
+      moves.push(GameAction.Pay);
+    }
+    return moves;
+  }
+  public getCurrentPlayer(): string {
+    return this.state.activePlayer;
+  }
+  public performMove(action?: GameAction) {
+    if (action === GameAction.Pay) {
+      this.pay();
+      this.switchActivePlayer();
+    } else {
+      // action par défaut
+        this.take();
+    }
+    this.incrementTurn();
+  }
+  public getWinner(): string {
+    if (this.state.board.visibleCard === undefined) {
+      return this.getScores()[0][0];
+    } else {
+      return null;
+    }
+  }
   //#endregion Actions ------------------------------------------------------------------
 
   //#region Méthodes privées ############################################################
-  private getCardScore(player: string): number {
+  private getPlayerCardScore(player: string): number {
     return this.state.board.playerCards.find((p) => p.name === player).cards
       .map((card: Card) => card.getValue())
       .sort((v1, v2) => v1 - v2)
@@ -174,6 +217,7 @@ export default class Board {
         return totalScore + (array[i] === array[i - 1] + 1 ? 0 : currentValue);
       }, 0);
   }
+
   private isStateValid(state: IFullBoardState): boolean {
     if (!state.board.playerCards.find((p) => p.name === state.activePlayer)) {
       return false;
