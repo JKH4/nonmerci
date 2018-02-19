@@ -7,6 +7,7 @@ import { SingleCellGame, SummingDiceGame, TicTacToeGame, TwoCellGame } from './g
 
 describe('mcts', () => {
   it('should return one option when only one is returned for a state', () => {
+    console.log('JKH');
     const mcts = new MCTS(new SingleCellGame());
     expect(mcts.selectMove()).toEqual(0);
     // assert.deepEqual(mcts.selectMove(), 0);

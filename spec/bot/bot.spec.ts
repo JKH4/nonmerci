@@ -117,7 +117,7 @@ describe('Gérer un Bot:', () => {
       expect(proposedAction).toEqual(GameAction.Pay);
     });
 
-    fit('Propose l\'action PAY si le joueur actif des jetons et la carte est plus grosse que les jetons', () => {
+    it('Propose l\'action PAY si le joueur actif des jetons et la carte est plus grosse que les jetons', () => {
       const fullBoardState: IFullBoardState = {
         activePlayer: 'Joueur1',
         board: {

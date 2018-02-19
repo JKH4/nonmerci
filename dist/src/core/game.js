@@ -73,6 +73,7 @@ class Game {
                 // action par défaut
                 try {
                     this.getBoard().take();
+                    this.getBoard().revealNewCard();
                 }
                 catch (e) {
                     const err = e;

@@ -302,6 +302,7 @@ describe('Gestion du plateau', () => {
         + fullState.playerTokens.map(({name, hiddenTokens}) => hiddenTokens).reduce((prev, curr) => prev + curr, 0);
 
       board.take();
+      board.revealNewCard();
       board.switchActivePlayer();
       const fullStateTake = board.getState();
       const totalTokensTake = fullStateTake.board.visibleTokens
@@ -356,14 +357,16 @@ describe('Gestion du plateau', () => {
       expect(newFullState.board.visibleTokens).toEqual(0);
       expect(newFullState.board.playerCards.find((p) => p.name === player).cards.find((c) => c === card))
         .not.toBeUndefined();
-      expect(newFullState.board.visibleCard).not.toBe(card);
+      expect(newFullState.board.visibleCard).toBe(undefined);
     });
 
-    it('Signale la fin de la partie s\'il n\'y a plus de carte dans le deck après une action TAKE:', () => {
+    it('Signale la fin de la partie s\'il n\'y a plus de carte dans le deck après une action REVEAL:', () => {
       while (board.getPlayerState().board.deckSize > 0) {
         expect(() => board.take()).not.toThrowError();
+        expect(() => board.revealNewCard()).not.toThrowError();
       }
-      expect(() => board.take()).toThrowError('END_OF_GAME');
+      expect(() => board.take()).not.toThrowError();
+      expect(() => board.revealNewCard()).toThrowError('END_OF_GAME');
       const newBoardState = board.getState();
 
       expect(newBoardState.board.deck).toEqual([]);
@@ -378,21 +381,25 @@ describe('Gestion du plateau', () => {
       expect(() => board.pay()).toThrowError('NOT_ENOUGH_TOKENS');
     });
 
-    it('Echoue à résoudre une action PAY ou TAKE s\'il n\'y a plus de carte dans le deck:', () => {
+    it('Echoue à résoudre une action PAY ou TAKE s\'il n\'y a pas de carte visible:', () => {
       while (board.getPlayerState().board.deckSize > 0) {
         expect(() => board.take()).not.toThrowError();
+        expect(() => board.revealNewCard()).not.toThrowError();
       }
-      expect(() => board.take()).toThrowError('END_OF_GAME');
+      expect(() => board.take()).not.toThrowError('END_OF_GAME');
+      expect(() => board.revealNewCard()).toThrowError('END_OF_GAME');
 
-      expect(() => board.pay()).toThrowError('NO_MORE_CARD');
-      expect(() => board.take()).toThrowError('NO_MORE_CARD');
+      expect(() => board.pay()).toThrowError('NO_VISIBLE_CARD');
+      expect(() => board.take()).toThrowError('NO_VISIBLE_CARD');
     });
 
     it('Ne propose plus de carte visible après qu\'un joueur ai pris (TAKE) la dernière carte:', () => {
       while (board.getPlayerState().board.deckSize > 0) {
         expect(() => board.take()).not.toThrowError();
+        expect(() => board.revealNewCard()).not.toThrowError();
       }
-      expect(() => board.take()).toThrowError('END_OF_GAME');
+      expect(() => board.take()).not.toThrowError();
+      expect(() => board.revealNewCard()).toThrowError('END_OF_GAME');
       const newBoardState = board.getPlayerState();
 
       expect(newBoardState.board.visibleCard).toBeUndefined();
@@ -402,6 +409,39 @@ describe('Gestion du plateau', () => {
       const turn = board.getState().turn;
       board.incrementTurn();
       expect(board.getState().turn).toEqual(turn + 1);
+    });
+
+    it('Révèle une nouvelle carte du deck', () => {
+      const fullBoardState: IFullBoardState = {
+        activePlayer: 'Anna',
+        board: {
+          deck: [3, 4, 5, 6],
+          playerCards: [
+            { name: 'Anna', cards: [] },
+            { name: 'Bob', cards: [] },
+            { name: 'David', cards: [] },
+          ],
+          visibleCard: undefined,
+          visibleTokens: 0,
+        },
+        playerTokens: [
+          { name: 'Anna', hiddenTokens: 11 },
+          { name: 'Bob', hiddenTokens: 0 },
+          { name: 'David', hiddenTokens: 0 },
+        ],
+        turn: 30,
+      };
+      const fixedBoard = new Board({ fullBoardState });
+      const state = fixedBoard.getState();
+      expect(() => fixedBoard.revealNewCard()).not.toThrowError();
+      const newState = fixedBoard.getState();
+      expect(state.board.visibleCard).toBeUndefined();
+      expect(newState.board.visibleCard).toEqual(6);
+    });
+
+    it('Echoue à révèler une nouvelle carte du deck s\'il y a déjà une carte révélée', () => {
+      expect(board.getState().board.visibleCard).not.toBeUndefined();
+      expect(() => board.revealNewCard()).toThrowError('CARD_ALREADY_REVEALED');
     });
   });
 
@@ -529,6 +569,201 @@ describe('Gestion du plateau', () => {
       const fixedBoard = new Board({fullBoardState});
       expect(fixedBoard.getPossibleMoves()).toEqual([]);
       // expect(board.getPossibleMoves()).toContain(GameAction.Pay);
+    });
+
+    it('Renvoi "(35 - 2) - 1" cartes dans les tirages possibles en début de partie', () => {
+      const draws = board.getPossibleDraws();
+      expect(draws.length).toEqual((35 - 2) - 1);
+    });
+
+    it('Renvoie la bonne liste de cartes quand on demande les tirages possibles (fixedBoard)', () => {
+      const fullBoardState: IFullBoardState = {
+        activePlayer: 'Anna',
+        board: {
+          deck: [13, 14, 15],
+          playerCards: [
+            { name: 'Anna', cards: [3, 4, 5] },
+            { name: 'Bob', cards: [6, 7, 8] },
+            { name: 'David', cards: [9, 10, 11] },
+          ],
+          visibleCard: 12,
+          visibleTokens: 0,
+        },
+        playerTokens: [
+          { name: 'Anna', hiddenTokens: 11 },
+          { name: 'Bob', hiddenTokens: 11 },
+          { name: 'David', hiddenTokens: 11 },
+        ],
+        turn: 30,
+      };
+      const fixedBoard = new Board({fullBoardState});
+      const state = fixedBoard.getState();
+      // console.log(fixedBoard.getPossibleDraws());
+      const drawsValues = fixedBoard.getPossibleDraws().map((c) => c.getValue());
+      expect(drawsValues).toEqual([13, 14, 15, 16, 17, 18, 19, 20, 21, 22,
+        23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35]);
+    });
+
+    it('Ne renvoie rien si le deck est vide quand on demande les tirages possibles (fixedBoard)', () => {
+      const fullBoardState: IFullBoardState = {
+        activePlayer: 'Anna',
+        board: {
+          deck: [],
+          playerCards: [
+            { name: 'Anna', cards: [3, 4, 5] },
+            { name: 'Bob', cards: [6, 7, 8] },
+            { name: 'David', cards: [9, 10, 11] },
+          ],
+          visibleCard: undefined,
+          visibleTokens: 0,
+        },
+        playerTokens: [
+          { name: 'Anna', hiddenTokens: 11 },
+          { name: 'Bob', hiddenTokens: 11 },
+          { name: 'David', hiddenTokens: 11 },
+        ],
+        turn: 30,
+      };
+      const fixedBoard = new Board({fullBoardState});
+      expect(fixedBoard.getPossibleDraws()).toEqual([]);
+    });
+
+    it('Ne renvoi pas les cartes déjà révélées dans les tirages possibles en début de partie', () => {
+      const NB_CARDS = 10;
+      for (let i = 0; i < NB_CARDS; i++) {
+        board.take();
+        board.revealNewCard();
+      }
+      const state = board.getState();
+      const drawsValues = board.getPossibleDraws().map((c) => c.getValue());
+      expect(drawsValues.length).toEqual((35 - 2) - (NB_CARDS + 1));
+      expect(drawsValues).not.toContain(state.board.visibleCard);
+      state.board.playerCards.forEach(({name, cards}) => {
+        cards.forEach((c) => expect(drawsValues).not.toContain(c));
+      });
+    });
+
+    it('Réalise un TAKE sur un performMove(Take)', () => {
+      const takeSpy = spyOn(board, 'take');
+      const revealSpy = spyOn(board, 'revealNewCard');
+      board.performMove(GameAction.Take);
+      expect(takeSpy).toHaveBeenCalled();
+      expect(revealSpy).not.toHaveBeenCalled();
+    });
+
+    it('Réalise un PAY sur un performMove(Pay)', () => {
+      const takeSpy = spyOn(board, 'pay');
+      const switchSpy = spyOn(board, 'switchActivePlayer');
+      board.performMove(GameAction.Pay);
+      expect(takeSpy).toHaveBeenCalled();
+      expect(switchSpy).toHaveBeenCalled();
+    });
+
+    it('Fait apparaitre la carte requise sur un performDraw(card)', () => {
+      const fullBoardState: IFullBoardState = {
+        activePlayer: 'Anna',
+        board: {
+          deck: [3, 4, 5],
+          playerCards: [
+            { name: 'Anna', cards: [] },
+            { name: 'Bob', cards: [] },
+            { name: 'David', cards: [] },
+          ],
+          visibleCard: undefined,
+          visibleTokens: 0,
+        },
+        playerTokens: [
+          { name: 'Anna', hiddenTokens: 11 },
+          { name: 'Bob', hiddenTokens: 11 },
+          { name: 'David', hiddenTokens: 11 },
+        ],
+        turn: 30,
+      };
+      const fixedBoard = new Board({fullBoardState});
+      const state = fixedBoard.getPlayerState();
+      const card = new Card(10);
+      fixedBoard.performDraw(card);
+      const newState = fixedBoard.getPlayerState();
+      expect(newState.board.deckSize).toEqual(state.board.deckSize - 1);
+      expect(newState.board.visibleCard).toEqual(10);
+    });
+
+    it('Echoue a faire apparaitre une carte déjà révélée sur un performDraw(card)', () => {
+      const fullBoardState: IFullBoardState = {
+        activePlayer: 'Anna',
+        board: {
+          deck: [4, 5],
+          playerCards: [
+            { name: 'Anna', cards: [3] },
+            { name: 'Bob', cards: [] },
+            { name: 'David', cards: [] },
+          ],
+          visibleCard: undefined,
+          visibleTokens: 0,
+        },
+        playerTokens: [
+          { name: 'Anna', hiddenTokens: 11 },
+          { name: 'Bob', hiddenTokens: 11 },
+          { name: 'David', hiddenTokens: 11 },
+        ],
+        turn: 30,
+      };
+      const fixedBoard = new Board({fullBoardState});
+      const state = fixedBoard.getPlayerState();
+      const card = new Card(3);
+      expect(() => fixedBoard.performDraw(card)).toThrowError('CARD_ALREADY_ON_BOARD');
+    });
+
+    it('Echoue a faire apparaitre une carte déjà révélée sur un performDraw(card)', () => {
+      const fullBoardState: IFullBoardState = {
+        activePlayer: 'Anna',
+        board: {
+          deck: [4, 5],
+          playerCards: [
+            { name: 'Anna', cards: [] },
+            { name: 'Bob', cards: [] },
+            { name: 'David', cards: [] },
+          ],
+          visibleCard: 3,
+          visibleTokens: 0,
+        },
+        playerTokens: [
+          { name: 'Anna', hiddenTokens: 11 },
+          { name: 'Bob', hiddenTokens: 11 },
+          { name: 'David', hiddenTokens: 11 },
+        ],
+        turn: 30,
+      };
+      const fixedBoard = new Board({fullBoardState});
+      const state = fixedBoard.getPlayerState();
+      const card = new Card(10);
+      expect(() => fixedBoard.performDraw(card)).toThrowError('CARD_ALREADY_REVEALED');
+    });
+
+    it('Echoue a faire apparaitre une carte si le deck est vide sur un performDraw(card)', () => {
+      const fullBoardState: IFullBoardState = {
+        activePlayer: 'Anna',
+        board: {
+          deck: [],
+          playerCards: [
+            { name: 'Anna', cards: [] },
+            { name: 'Bob', cards: [] },
+            { name: 'David', cards: [] },
+          ],
+          visibleCard: undefined,
+          visibleTokens: 0,
+        },
+        playerTokens: [
+          { name: 'Anna', hiddenTokens: 11 },
+          { name: 'Bob', hiddenTokens: 11 },
+          { name: 'David', hiddenTokens: 11 },
+        ],
+        turn: 30,
+      };
+      const fixedBoard = new Board({fullBoardState});
+      const state = fixedBoard.getPlayerState();
+      const card = new Card(10);
+      expect(() => fixedBoard.performDraw(card)).toThrowError('END_OF_GAME');
     });
   });
 });

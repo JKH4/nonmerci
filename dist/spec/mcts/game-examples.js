@@ -61,8 +61,9 @@ class TwoCellGame extends mcts_game_1.MctsGame {
 }
 exports.TwoCellGame = TwoCellGame;
 // tslint:disable-next-line:max-classes-per-file
-class TicTacToeGame {
+class TicTacToeGame extends mcts_game_1.MctsGame {
     constructor() {
+        super();
         this.board = [[null, null, null],
             [null, null, null],
             [null, null, null]];

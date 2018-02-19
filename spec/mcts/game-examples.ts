@@ -77,12 +77,13 @@ type TicTacToePlayer =
 | 'O';
 
 // tslint:disable-next-line:max-classes-per-file
-export class TicTacToeGame {
+export class TicTacToeGame extends MctsGame {
   public board?: TicTacToePlayer[][];
   public boardScore: number[][];
   public winningScores: number[];
   public currentPlayer: TicTacToePlayer;
   constructor() {
+    super();
     this.board = [[null, null, null],
                   [null, null, null],
                   [null, null, null]];

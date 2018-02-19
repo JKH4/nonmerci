@@ -12,7 +12,7 @@ class Bot {
                 case BrainOptions.Mcts1:
                     const mcts = new mcts_1.default(board);
                     const move = mcts.selectMove();
-                    console.log('proposeAction', move);
+                    // console.log('proposeAction', move);
                     return move;
                 case BrainOptions.Take:
                     return game_1.GameAction.Take;

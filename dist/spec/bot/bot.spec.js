@@ -60,7 +60,7 @@ describe('Gérer un Bot:', () => {
             expect(myBot).toEqual(jasmine.any(bot_1.default));
             expect(myBot.getBotInfo().brainType).toEqual(bot_1.BrainOptions.Mcts1);
         });
-        it('Ne propose pas d\'action si le jeu est fini', () => {
+        it('Renvoi une erreur si on demande une action alors que le jeu est fini', () => {
             const fullBoardState = {
                 activePlayer: 'Joueur1',
                 board: {
@@ -70,7 +70,7 @@ describe('Gérer un Bot:', () => {
                         { name: 'Joueur2', cards: [] },
                         { name: 'Joueur3', cards: [] },
                     ],
-                    visibleCard: 29,
+                    visibleCard: undefined,
                     visibleTokens: 4,
                 },
                 playerTokens: [
@@ -81,8 +81,81 @@ describe('Gérer un Bot:', () => {
                 turn: 2,
             };
             const board = new board_1.default({ fullBoardState });
+            expect(() => myBot.proposeAction(board)).toThrowError();
+            // const proposedAction = myBot.proposeAction(board);
+            // expect(proposedAction).toEqual(undefined);
+        });
+        it('Propose l\'action PAY si le joueur actif a plein de jetons et que la carte est grosse', () => {
+            const fullBoardState = {
+                activePlayer: 'Joueur1',
+                board: {
+                    deck: [],
+                    playerCards: [
+                        { name: 'Joueur1', cards: [] },
+                        { name: 'Joueur2', cards: [] },
+                        { name: 'Joueur3', cards: [] },
+                    ],
+                    visibleCard: 35,
+                    visibleTokens: 0,
+                },
+                playerTokens: [
+                    { name: 'Joueur1', hiddenTokens: 11 },
+                    { name: 'Joueur2', hiddenTokens: 11 },
+                    { name: 'Joueur3', hiddenTokens: 11 },
+                ],
+                turn: 2,
+            };
+            const board = new board_1.default({ fullBoardState });
             const proposedAction = myBot.proposeAction(board);
-            expect(proposedAction).toEqual([]);
+            expect(proposedAction).toEqual(game_1.GameAction.Pay);
+        });
+        it('Propose l\'action PAY si le joueur actif des jetons et la carte est plus grosse que les jetons', () => {
+            const fullBoardState = {
+                activePlayer: 'Joueur1',
+                board: {
+                    deck: [],
+                    playerCards: [
+                        { name: 'Joueur1', cards: [] },
+                        { name: 'Joueur2', cards: [] },
+                        { name: 'Joueur3', cards: [] },
+                    ],
+                    visibleCard: 3,
+                    visibleTokens: 1,
+                },
+                playerTokens: [
+                    { name: 'Joueur1', hiddenTokens: 1 },
+                    { name: 'Joueur2', hiddenTokens: 1 },
+                    { name: 'Joueur3', hiddenTokens: 1 },
+                ],
+                turn: 2,
+            };
+            const board = new board_1.default({ fullBoardState });
+            const proposedAction = myBot.proposeAction(board);
+            expect(proposedAction).toEqual(game_1.GameAction.Pay);
+        });
+        it('Propose l\'action TAKE si le joueur actif a peu de jetons et que la carte est petite', () => {
+            const fullBoardState = {
+                activePlayer: 'Joueur1',
+                board: {
+                    deck: [],
+                    playerCards: [
+                        { name: 'Joueur1', cards: [] },
+                        { name: 'Joueur2', cards: [] },
+                        { name: 'Joueur3', cards: [] },
+                    ],
+                    visibleCard: 3,
+                    visibleTokens: 30,
+                },
+                playerTokens: [
+                    { name: 'Joueur1', hiddenTokens: 1 },
+                    { name: 'Joueur2', hiddenTokens: 1 },
+                    { name: 'Joueur3', hiddenTokens: 1 },
+                ],
+                turn: 2,
+            };
+            const board = new board_1.default({ fullBoardState });
+            const proposedAction = myBot.proposeAction(board);
+            expect(proposedAction).toEqual(game_1.GameAction.Take);
         });
     });
 });

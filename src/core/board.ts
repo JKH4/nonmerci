@@ -10,6 +10,7 @@ import { MctsGame } from '../mcts/mcts-game';
  * - Error ('INVALID_BOARD_STATE')
  * - Error ('INVALID_CONTRUCTOR_OPTIONS')
  * - Error ('INVALID_PLAYER')
+ * - Error ('CARD_ALREADY_REVEALED')
  * - Error ('NOT_ENOUGH_TOKENS')
  * - Error ('NO_MORE_CARD')
  * - Error ('END_OF_GAME')
@@ -24,7 +25,7 @@ export default class Board extends MctsGame {
    *  .players: P1: initialise un Board dans un état 'initial' a partir de la liste de joueurs
    *                (joueurs, deck aléatoire de 24 cartes, 11 jetons par joueurs)
    */
-  constructor(options: {
+  constructor(options?: {
     fullBoardState?: IFullBoardState,
     players?: string[],
   }) {
@@ -146,7 +147,7 @@ export default class Board extends MctsGame {
     if (this.state.playerTokens.find((p) => p.name === this.state.activePlayer).hiddenTokens <= 0) {
       throw new Error ('NOT_ENOUGH_TOKENS');
     } else if (!this.state.board.visibleCard) {
-      throw new Error ('NO_MORE_CARD');
+      throw new Error ('NO_VISIBLE_CARD');
     } else {
       this.state.board.visibleTokens++;
       this.state.playerTokens.find((p) => p.name === this.state.activePlayer).hiddenTokens--;
@@ -155,7 +156,7 @@ export default class Board extends MctsGame {
 
   public take() {
     if (!this.state.board.visibleCard) {
-      throw new Error ('NO_MORE_CARD');
+      throw new Error ('NO_VISIBLE_CARD');
     } else {
       this.state.board.playerCards.find((p) => p.name === this.state.activePlayer).cards
         .push(this.state.board.visibleCard);
@@ -165,16 +166,35 @@ export default class Board extends MctsGame {
         + this.state.board.visibleTokens;
 
       this.state.board.visibleTokens = 0;
-      try {
-        this.state.board.visibleCard = this.state.board.deck.drawNextCard();
-      } catch (e) {
-        const err: Error = e;
-        if (err.message === 'EMPTY_DECK') {
-          this.state.board.visibleCard = undefined;
-          throw new Error('END_OF_GAME');
-        } else {
-          throw e;
-        }
+      this.state.board.visibleCard = undefined;
+      // try {
+      //   this.state.board.visibleCard = this.state.board.deck.drawNextCard();
+      // } catch (e) {
+      //   const err: Error = e;
+      //   if (err.message === 'EMPTY_DECK') {
+      //     this.state.board.visibleCard = undefined;
+      //     throw new Error('END_OF_GAME');
+      //   } else {
+      //     throw e;
+      //   }
+      // }
+    }
+  }
+
+  public revealNewCard() {
+    if (this.state.board.visibleCard !== undefined) {
+      throw new Error('CARD_ALREADY_REVEALED');
+    }
+
+    try {
+      this.state.board.visibleCard = this.state.board.deck.drawNextCard();
+    } catch (e) {
+      const err: Error = e;
+      if (err.message === 'EMPTY_DECK') {
+        this.state.board.visibleCard = undefined;
+        throw new Error('END_OF_GAME');
+      } else {
+        throw e;
       }
     }
   }
@@ -191,6 +211,26 @@ export default class Board extends MctsGame {
     }
     return moves;
   }
+  public getPossibleDraws(): Card[] {
+    if (this.state.board.deck.getSize() === 0) {
+      return [];
+    }
+    // let revealedCards: Card[] = [];
+    // if (this.state.board.visibleCard !== undefined) {
+    //   revealedCards.push(this.state.board.visibleCard);
+    // }
+    // this.state.board.playerCards.forEach(({name, cards}) => revealedCards = revealedCards.concat(cards));
+    const revealedCards = this.getRevealedCards();
+    const possibleDraws: Card[] = [];
+    for (let i = 3; i < 36; i++) {
+      if (revealedCards.find((c) => c.getValue() === i) === undefined) {
+        possibleDraws.push(new Card(i));
+      }
+    }
+    // console.log('revealedCards:', revealedCards.map((c) => c.getValue()));
+    // console.log('possibleDraws:', possibleDraws.map((c) => c.getValue()));
+    return possibleDraws;
+  }
   public getCurrentPlayer(): string {
     return this.state.activePlayer;
   }
@@ -205,8 +245,8 @@ export default class Board extends MctsGame {
       } catch (e) {
         const err: Error = e;
         if (err.message === 'END_OF_GAME') {
-          console.log('performMove/END_OF_GAME');
-          console.log(this.getScores());
+          // console.log('performMove/END_OF_GAME');
+          // console.log(this.getScores());
         } else {
           throw e;
         }
@@ -214,11 +254,68 @@ export default class Board extends MctsGame {
     }
     this.incrementTurn();
   }
+  public performDraw(card: Card) {
+    // console.log('jkh performDraw', card);
+    const revealedCards = this.getRevealedCards();
+    if (this.state.board.visibleCard !== undefined) {
+      // console.log('performDraw CARD_ALREADY_REVEALED', card, this.state.board.visibleCard.getValue());
+      // console.log('performDraw CARD_ALREADY_REVEALED',
+      //   this.state.board.playerCards.map((p) => p.name + ':' + p.cards.map((c) => c.getValue())));
+      throw new Error('CARD_ALREADY_REVEALED');
+    }
+    if (revealedCards.find((c) => c.getValue() === card.getValue()) !== undefined) {
+      throw new Error('CARD_ALREADY_ON_BOARD');
+    } else {
+      try {
+        this.state.board.deck.drawNextCard();
+      } catch (e) {
+        const err: Error = e;
+        if (err.message === 'EMPTY_DECK') {
+          this.state.board.visibleCard = undefined;
+          throw new Error('END_OF_GAME');
+        } else {
+          throw e;
+        }
+      }
+      this.state.board.visibleCard = card;
+      // this.state.board.deck.drawNextCard();
+    }
+  }
   public getWinner(): string {
     if (this.state.board.visibleCard === undefined) {
       return this.getScores()[0][0];
     } else {
       return null;
+    }
+  }
+  // public isExpectiminimax(): boolean {
+  //   return true;
+  // }
+  public isCurrentNodeADecisionNode(): boolean {
+    if (this.state.board.visibleCard !== undefined) {
+      return true;
+    } else {
+      return false;
+    // } else if (this.state.board.visibleCard === undefined && this.state.board.deck.getSize() > 0) {
+    //   return false;
+    // } else {
+    //   throw new Error('NOT_DECISION_NOR_DRAW');
+    }
+  }
+  public isNextNodeADecisionNode(nextAction: GameAction | Card): boolean {
+    if (this.state.board.visibleCard === undefined && this.state.board.deck.getSize() > 0
+    && nextAction instanceof Card) {
+      return true;
+    } else if (this.state.board.visibleCard !== undefined && nextAction === GameAction.Pay) {
+      return true;
+    } else if (this.state.board.visibleCard !== undefined && nextAction === GameAction.Take) {
+      return false;
+    } else if (this.state.board.visibleCard === undefined && nextAction === null) {
+      return false;
+    } else if (this.state.board.visibleCard !== undefined && nextAction === null) {
+      return true;
+    } else {
+      throw new Error('INVALID_ACTION');
     }
   }
   //#endregion Actions MCTS -------------------------------------------------------------
@@ -243,11 +340,19 @@ export default class Board extends MctsGame {
     const allCards = state.board.deck
       .concat([state.board.visibleCard])
       .concat(state.board.playerCards.map((p) => p.cards).reduce((prev, curr) => prev.concat(curr), []));
-    console.log(allCards, new Set(allCards));
+    // console.log(allCards, new Set(allCards));
     if (allCards.length !== new Set(allCards).size) {
       return false;
     }
     return true;
+  }
+  private getRevealedCards(): Card[] {
+    let revealedCards: Card[] = [];
+    if (this.state.board.visibleCard !== undefined) {
+      revealedCards.push(this.state.board.visibleCard);
+    }
+    this.state.board.playerCards.forEach(({name, cards}) => revealedCards = revealedCards.concat(cards));
+    return revealedCards;
   }
   //#endregion Méthodes privées ---------------------------------------------------------
 }

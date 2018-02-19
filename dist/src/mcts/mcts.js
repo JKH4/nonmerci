@@ -12,20 +12,28 @@ class MCTS {
             }
             return 0;
         };
-        this.rounds = rounds || 1000;
+        this.rounds = rounds || 100;
         this.player = player || 0;
-        this.rootNode = new node_1.default(game, null, null, 0, this);
+        // console.log('JKH MCTS constructor 1');
+        this.rootNode = new node_1.default(game, null, null, 0, this, game.isNextNodeADecisionNode(null));
+        // console.log('JKH MCTS constructor 2');
     }
     selectMove() {
+        // console.log('JKH MCTS selectMove 1', this.game.getPossibleDraws().map((c) => c.getValues ? c.getValues() : c));
+        // console.log('JKH MCTS selectMove 1', this.game.getPossibleMoves());
         let round;
         let currentNode;
+        // console.log('jkh selectMove0', this.rootNode.move);
         for (round = 0; round < this.rounds; round += 1) {
             currentNode = this.rootNode;
+            // console.log('JKH MCTS selectMove 2 for', currentNode.move, currentNode.isDecisionNode);
             this.rootNode.visits += 1;
+            // console.log('jkh selectMove', currentNode.move);
             while (!_.isEmpty(currentNode.getChildren())) {
                 currentNode = currentNode.nextMove();
                 currentNode.visits += 1;
             }
+            // console.log('JKH MCTS selectMove 2 for 2');
             const winner = currentNode.getWinner();
             while (currentNode) {
                 currentNode.wins[winner] = (currentNode.wins[winner] || 0) + 1;

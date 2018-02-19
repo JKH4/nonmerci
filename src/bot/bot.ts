@@ -33,7 +33,7 @@ export default class Bot {
       case BrainOptions.Mcts1:
         const mcts = new MCTS(board);
         const move = mcts.selectMove();
-        console.log('proposeAction', move);
+        // console.log('proposeAction', move);
         return move;
       case BrainOptions.Take:
         return GameAction.Take;
