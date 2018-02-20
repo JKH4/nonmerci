@@ -16,8 +16,7 @@ export default class Node {
   public depth: number;
   public randomNode: boolean;
   public gameConstructor: any;
-  public isDecisionNode: boolean;
-  constructor(game: MctsGame, parent: Node | null, move: any, depth: number, mcts: MCTS, isDecisionNode = true) {
+  constructor(game: MctsGame, parent: Node | null, move: any, depth: number, mcts: MCTS) {
     this.gameConstructor = game.constructor;
     this.game = game;
     this.mcts = mcts;
@@ -28,7 +27,6 @@ export default class Node {
     this.children = null;
     this.depth = depth || 0;
     this.randomNode = false;
-    this.isDecisionNode = isDecisionNode;
   }
 
   public getUCB1(player: any) {
@@ -44,22 +42,18 @@ export default class Node {
   }
 
   public getChildren() {
-    // console.log('jkh getChildren0', 'this.move=', this.move, 'this.isDecisionNode=', this.isDecisionNode);
     if (this.children === null) {
       if (this.move !== null) {
-        // console.log('jkh getChildren1', this.move, this.isDecisionNode);
-        // this.isDecisionNode && this.game.isExpectiminimax()
-        this.game.isCurrentNodeADecisionNode()
-         ? this.game.performMove(this.move)
-         : this.game.performDraw(this.move);
+        this.game.performMove(this.move);
+        // this.game.isDecisionNode()
+        //  ? this.game.performMove(this.move)
+        //  : this.game.performDraw(this.move);
       }
       let moves: any;
-      // console.log('jkh node getChildren', this.move);
-      // this.isDecisionNode
-      this.game.isCurrentNodeADecisionNode()
-        ? moves = this.game.getPossibleMoves()
-        : moves = this.game.getPossibleDraws();
-      // console.log('jkh getChildren2', moves, this.isDecisionNode);
+      moves = this.game.getPossibleMoves();
+      // this.game.isDecisionNode()
+      //   ? moves = this.game.getPossibleMoves()
+      //   : moves = this.game.getPossibleDraws();
       if (moves instanceof RandomSelection) {
         moves = moves.array;
         this.randomNode = true;
@@ -74,7 +68,6 @@ export default class Node {
           move,
           this.depth + 1,
           this.mcts,
-          this.game.isNextNodeADecisionNode(move), // !(this.isDecisionNode && this.game.isExpectiminimax()),
         );
       });
     }
@@ -88,7 +81,6 @@ export default class Node {
   }
 
   public nextMove() {
-    // console.log('jkh nextMove');
     // shuffle because sortBy is a stable sort but we want equal nodes to be chosen randomly
     if (this.randomNode) {
       return _(this.getChildren()).shuffle().last();

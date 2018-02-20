@@ -192,91 +192,138 @@ class Board extends mcts_game_1.MctsGame {
     //#endregion Actions ------------------------------------------------------------------
     //#region Actions MCTS ################################################################
     getPossibleMoves() {
-        const moves = [];
-        if (this.state.board.visibleCard) {
-            moves.push(game_1.GameAction.Take);
-            if (this.state.playerTokens.find((p) => p.name === this.state.activePlayer).hiddenTokens > 0) {
-                moves.push(game_1.GameAction.Pay);
+        if (this.isDecisionNode()) {
+            const moves = [];
+            if (this.state.board.visibleCard) {
+                moves.push(game_1.GameAction.Take);
+                if (this.state.playerTokens.find((p) => p.name === this.state.activePlayer).hiddenTokens > 0) {
+                    moves.push(game_1.GameAction.Pay);
+                }
             }
+            return moves;
         }
-        return moves;
-    }
-    getPossibleDraws() {
-        if (this.state.board.deck.getSize() === 0) {
-            return [];
-        }
-        // let revealedCards: Card[] = [];
-        // if (this.state.board.visibleCard !== undefined) {
-        //   revealedCards.push(this.state.board.visibleCard);
-        // }
-        // this.state.board.playerCards.forEach(({name, cards}) => revealedCards = revealedCards.concat(cards));
-        const revealedCards = this.getRevealedCards();
-        const possibleDraws = [];
-        for (let i = 3; i < 36; i++) {
-            if (revealedCards.find((c) => c.getValue() === i) === undefined) {
-                possibleDraws.push(new card_1.default(i));
+        else {
+            if (this.state.board.deck.getSize() === 0) {
+                return [];
             }
+            const revealedCards = this.getRevealedCards();
+            const possibleDraws = [];
+            for (let i = 3; i < 36; i++) {
+                if (revealedCards.find((c) => c.getValue() === i) === undefined) {
+                    possibleDraws.push(new card_1.default(i));
+                }
+            }
+            return possibleDraws;
         }
-        // console.log('revealedCards:', revealedCards.map((c) => c.getValue()));
-        // console.log('possibleDraws:', possibleDraws.map((c) => c.getValue()));
-        return possibleDraws;
     }
+    // public getPossibleDraws(): Card[] {
+    //   if (this.state.board.deck.getSize() === 0) {
+    //     return [];
+    //   }
+    //   // let revealedCards: Card[] = [];
+    //   // if (this.state.board.visibleCard !== undefined) {
+    //   //   revealedCards.push(this.state.board.visibleCard);
+    //   // }
+    //   // this.state.board.playerCards.forEach(({name, cards}) => revealedCards = revealedCards.concat(cards));
+    //   const revealedCards = this.getRevealedCards();
+    //   const possibleDraws: Card[] = [];
+    //   for (let i = 3; i < 36; i++) {
+    //     if (revealedCards.find((c) => c.getValue() === i) === undefined) {
+    //       possibleDraws.push(new Card(i));
+    //     }
+    //   }
+    //   // console.log('revealedCards:', revealedCards.map((c) => c.getValue()));
+    //   // console.log('possibleDraws:', possibleDraws.map((c) => c.getValue()));
+    //   return possibleDraws;
+    // }
     getCurrentPlayer() {
         return this.state.activePlayer;
     }
     performMove(action) {
-        if (action === game_1.GameAction.Pay) {
-            this.pay();
-            this.switchActivePlayer();
+        if (this.isDecisionNode()) {
+            if (action === game_1.GameAction.Pay) {
+                this.pay();
+                this.switchActivePlayer();
+            }
+            else if (action === game_1.GameAction.Take || !action) {
+                // action par défaut
+                try {
+                    this.take();
+                }
+                catch (e) {
+                    const err = e;
+                    if (err.message === 'END_OF_GAME') {
+                        // console.log('performMove/END_OF_GAME');
+                        // console.log(this.getScores());
+                    }
+                    else {
+                        throw e;
+                    }
+                }
+            }
+            else {
+                throw new Error('INVALID_ACTION');
+            }
+            this.incrementTurn();
+        }
+        else if (action instanceof card_1.default) {
+            const card = action;
+            const revealedCards = this.getRevealedCards();
+            if (this.state.board.visibleCard !== undefined) {
+                throw new Error('CARD_ALREADY_REVEALED');
+            }
+            if (revealedCards.find((c) => c.getValue() === card.getValue()) !== undefined) {
+                throw new Error('CARD_ALREADY_ON_BOARD');
+            }
+            else {
+                try {
+                    this.state.board.deck.drawNextCard();
+                }
+                catch (e) {
+                    const err = e;
+                    if (err.message === 'EMPTY_DECK') {
+                        this.state.board.visibleCard = undefined;
+                        throw new Error('END_OF_GAME');
+                    }
+                    else {
+                        throw e;
+                    }
+                }
+                this.state.board.visibleCard = card;
+                // this.state.board.deck.drawNextCard();
+            }
         }
         else {
-            // action par défaut
-            try {
-                this.take();
-            }
-            catch (e) {
-                const err = e;
-                if (err.message === 'END_OF_GAME') {
-                    // console.log('performMove/END_OF_GAME');
-                    // console.log(this.getScores());
-                }
-                else {
-                    throw e;
-                }
-            }
-        }
-        this.incrementTurn();
-    }
-    performDraw(card) {
-        // console.log('jkh performDraw', card);
-        const revealedCards = this.getRevealedCards();
-        if (this.state.board.visibleCard !== undefined) {
-            // console.log('performDraw CARD_ALREADY_REVEALED', card, this.state.board.visibleCard.getValue());
-            // console.log('performDraw CARD_ALREADY_REVEALED',
-            //   this.state.board.playerCards.map((p) => p.name + ':' + p.cards.map((c) => c.getValue())));
-            throw new Error('CARD_ALREADY_REVEALED');
-        }
-        if (revealedCards.find((c) => c.getValue() === card.getValue()) !== undefined) {
-            throw new Error('CARD_ALREADY_ON_BOARD');
-        }
-        else {
-            try {
-                this.state.board.deck.drawNextCard();
-            }
-            catch (e) {
-                const err = e;
-                if (err.message === 'EMPTY_DECK') {
-                    this.state.board.visibleCard = undefined;
-                    throw new Error('END_OF_GAME');
-                }
-                else {
-                    throw e;
-                }
-            }
-            this.state.board.visibleCard = card;
-            // this.state.board.deck.drawNextCard();
+            throw new Error('INVALID_ACTION');
         }
     }
+    // public performDraw(card: Card) {
+    //   // console.log('jkh performDraw', card);
+    //   const revealedCards = this.getRevealedCards();
+    //   if (this.state.board.visibleCard !== undefined) {
+    //     // console.log('performDraw CARD_ALREADY_REVEALED', card, this.state.board.visibleCard.getValue());
+    //     // console.log('performDraw CARD_ALREADY_REVEALED',
+    //     //   this.state.board.playerCards.map((p) => p.name + ':' + p.cards.map((c) => c.getValue())));
+    //     throw new Error('CARD_ALREADY_REVEALED');
+    //   }
+    //   if (revealedCards.find((c) => c.getValue() === card.getValue()) !== undefined) {
+    //     throw new Error('CARD_ALREADY_ON_BOARD');
+    //   } else {
+    //     try {
+    //       this.state.board.deck.drawNextCard();
+    //     } catch (e) {
+    //       const err: Error = e;
+    //       if (err.message === 'EMPTY_DECK') {
+    //         this.state.board.visibleCard = undefined;
+    //         throw new Error('END_OF_GAME');
+    //       } else {
+    //         throw e;
+    //       }
+    //     }
+    //     this.state.board.visibleCard = card;
+    //     // this.state.board.deck.drawNextCard();
+    //   }
+    // }
     getWinner() {
         if (this.state.board.visibleCard === undefined) {
             return this.getScores()[0][0];
@@ -285,40 +332,12 @@ class Board extends mcts_game_1.MctsGame {
             return null;
         }
     }
-    // public isExpectiminimax(): boolean {
-    //   return true;
-    // }
-    isCurrentNodeADecisionNode() {
+    isDecisionNode() {
         if (this.state.board.visibleCard !== undefined) {
             return true;
         }
         else {
             return false;
-            // } else if (this.state.board.visibleCard === undefined && this.state.board.deck.getSize() > 0) {
-            //   return false;
-            // } else {
-            //   throw new Error('NOT_DECISION_NOR_DRAW');
-        }
-    }
-    isNextNodeADecisionNode(nextAction) {
-        if (this.state.board.visibleCard === undefined && this.state.board.deck.getSize() > 0
-            && nextAction instanceof card_1.default) {
-            return true;
-        }
-        else if (this.state.board.visibleCard !== undefined && nextAction === game_1.GameAction.Pay) {
-            return true;
-        }
-        else if (this.state.board.visibleCard !== undefined && nextAction === game_1.GameAction.Take) {
-            return false;
-        }
-        else if (this.state.board.visibleCard === undefined && nextAction === null) {
-            return false;
-        }
-        else if (this.state.board.visibleCard !== undefined && nextAction === null) {
-            return true;
-        }
-        else {
-            throw new Error('INVALID_ACTION');
         }
     }
     //#endregion Actions MCTS -------------------------------------------------------------

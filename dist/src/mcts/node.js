@@ -3,7 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const _ = require("lodash");
 const random_selection_1 = require("./random-selection");
 class Node {
-    constructor(game, parent, move, depth, mcts, isDecisionNode = true) {
+    constructor(game, parent, move, depth, mcts) {
         this.gameConstructor = game.constructor;
         this.game = game;
         this.mcts = mcts;
@@ -14,7 +14,6 @@ class Node {
         this.children = null;
         this.depth = depth || 0;
         this.randomNode = false;
-        this.isDecisionNode = isDecisionNode;
     }
     getUCB1(player) {
         let scorePerVisit = 0;
@@ -30,28 +29,24 @@ class Node {
         return scorePerVisit + Math.sqrt(2 * Math.log(this.parent.visits) / this.visits);
     }
     getChildren() {
-        // console.log('jkh getChildren0', 'this.move=', this.move, 'this.isDecisionNode=', this.isDecisionNode);
         if (this.children === null) {
             if (this.move !== null) {
-                // console.log('jkh getChildren1', this.move, this.isDecisionNode);
-                // this.isDecisionNode && this.game.isExpectiminimax()
-                this.game.isCurrentNodeADecisionNode()
-                    ? this.game.performMove(this.move)
-                    : this.game.performDraw(this.move);
+                this.game.performMove(this.move);
+                // this.game.isDecisionNode()
+                //  ? this.game.performMove(this.move)
+                //  : this.game.performDraw(this.move);
             }
             let moves;
-            // console.log('jkh node getChildren', this.move);
-            // this.isDecisionNode
-            this.game.isCurrentNodeADecisionNode()
-                ? moves = this.game.getPossibleMoves()
-                : moves = this.game.getPossibleDraws();
-            // console.log('jkh getChildren2', moves, this.isDecisionNode);
+            moves = this.game.getPossibleMoves();
+            // this.game.isDecisionNode()
+            //   ? moves = this.game.getPossibleMoves()
+            //   : moves = this.game.getPossibleDraws();
             if (moves instanceof random_selection_1.default) {
                 moves = moves.array;
                 this.randomNode = true;
             }
             this.children = _.map(moves, (move) => {
-                return new Node(_.assign(new this.gameConstructor(), _.cloneDeep(this.game)), this, move, this.depth + 1, this.mcts, this.game.isNextNodeADecisionNode(move));
+                return new Node(_.assign(new this.gameConstructor(), _.cloneDeep(this.game)), this, move, this.depth + 1, this.mcts);
             });
         }
         return this.children;
@@ -62,7 +57,6 @@ class Node {
         return this.game.getWinner();
     }
     nextMove() {
-        // console.log('jkh nextMove');
         // shuffle because sortBy is a stable sort but we want equal nodes to be chosen randomly
         if (this.randomNode) {
             return _(this.getChildren()).shuffle().last();
