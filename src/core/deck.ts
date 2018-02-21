@@ -8,7 +8,7 @@ export default class Deck {
 
   constructor(options: {
     cardValues?: number[],
-    // cards?: Card[],
+    excludedCardValues?: number[],
     size?: number,
   }) {
     if (options.cardValues) {
@@ -18,7 +18,12 @@ export default class Deck {
     } else {
       const allCards = [];
       for (let i = 3; i < 36; i++) {
-        allCards.push(new Card(i));
+        if (!options.excludedCardValues || options.excludedCardValues.find((c) => c === i) === undefined) {
+          allCards.push(new Card(i));
+        }
+      }
+      if (options.size > allCards.length) {
+        throw new Error('TOO_MUCH_EXCLUDED_CARDS');
       }
       this.shuffle(allCards);
       const deckSize = options.size !== undefined ? options.size : 24;

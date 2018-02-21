@@ -77,6 +77,7 @@ describe('Gérer un Bot:', () => {
           visibleCard: undefined,
           visibleTokens: 4,
         },
+        history: [],
         playerTokens: [
           { name: 'Joueur1', hiddenTokens: 11 },
           { name: 'Joueur2', hiddenTokens: 11 },
@@ -104,6 +105,7 @@ describe('Gérer un Bot:', () => {
           visibleCard: 35,
           visibleTokens: 0,
         },
+        history: [],
         playerTokens: [
           { name: 'Joueur1', hiddenTokens: 11 },
           { name: 'Joueur2', hiddenTokens: 11 },
@@ -130,6 +132,7 @@ describe('Gérer un Bot:', () => {
           visibleCard: 3,
           visibleTokens: 1,
         },
+        history: [],
         playerTokens: [
           { name: 'Joueur1', hiddenTokens: 1 },
           { name: 'Joueur2', hiddenTokens: 1 },
@@ -156,6 +159,7 @@ describe('Gérer un Bot:', () => {
           visibleCard: 3,
           visibleTokens: 30,
         },
+        history: [],
         playerTokens: [
           { name: 'Joueur1', hiddenTokens: 1 },
           { name: 'Joueur2', hiddenTokens: 1 },

@@ -30,11 +30,11 @@ export default class MCTS {
     let round;
     let currentNode;
     for (round = 0; round < this.rounds && (new Date().getTime() - start < 30000); round += 1) {
-      if (((round + 1) % 100) === 0) {
-        process.stdout.write('!\r\n');
-      } else {
-        process.stdout.write('.');
-      }
+      // if (((round + 1) % 100) === 0) {
+      //   process.stdout.write('!\r\n');
+      // } else {
+      //   process.stdout.write('.');
+      // }
       currentNode = this.rootNode;
       this.rootNode.visits += 1;
       while (!_.isEmpty(currentNode.getChildren())) {
@@ -47,7 +47,11 @@ export default class MCTS {
         currentNode = currentNode.parent;
       }
     }
-    process.stdout.write(new Date().getTime() - start + '\r\n');
+    const move = _(this.rootNode.getChildren()).sortBy('visits').last().move;
+    // console.log(this.rootNode.visits, this.rootNode.wins);
+    // console.log(this.rootNode.getChildren()
+    //   .sort((n1, n2) => n2.visits - n1.visits).map((n) => ({ move: n.move, v: n.visits, wins: n.wins })));
+    // process.stdout.write('move: [' + move + '], time: ' + (new Date().getTime() - start) + ' ms\r\n');
     return _(this.rootNode.getChildren()).sortBy('visits').last().move;
   }
 }

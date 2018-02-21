@@ -3,7 +3,7 @@ import Card from '../../src/core/card';
 import Deck from '../../src/core/deck';
 import Game, { GameAction } from '../../src/core/game';
 
-describe('Gestion du plateau', () => {
+describe('Gestion du plateau:', () => {
   // **************************************************************************************
   describe('Initialiser le plateau de jeu:', () => {
     let board: Board;
@@ -51,6 +51,22 @@ describe('Gestion du plateau', () => {
           visibleCard: 29,
           visibleTokens: 4,
         },
+        history: [
+          {draw: 4},
+          {player: 'Joueur1', action: GameAction.Take, card: 4},
+          {draw: 5},
+          {player: 'Joueur1', action: GameAction.Take, card: 5},
+          {draw: 6},
+          {player: 'Joueur1', action: GameAction.Pay, card: 6},
+          {player: 'Joueur2', action: GameAction.Take, card: 6},
+          {draw: 7},
+          {player: 'Joueur2', action: GameAction.Take, card: 7},
+          {draw: 8},
+          {player: 'Joueur2', action: GameAction.Pay, card: 8},
+          {player: 'Joueur3', action: GameAction.Take, card: 8},
+          {draw: 9},
+          {player: 'Joueur3', action: GameAction.Take, card: 9},
+        ],
         playerTokens: [
           { name: 'Joueur1', hiddenTokens: 11 },
           { name: 'Joueur2', hiddenTokens: 7 },
@@ -77,6 +93,7 @@ describe('Gestion du plateau', () => {
           visibleCard: 29,
           visibleTokens: 4,
         },
+        history: [],
         playerTokens: [
           { name: 'Joueur1', hiddenTokens: 11 },
           { name: 'Joueur2', hiddenTokens: 11 },
@@ -100,6 +117,7 @@ describe('Gestion du plateau', () => {
           visibleCard: 29,
           visibleTokens: 4,
         },
+        history: [],
         playerTokens: [
           { name: 'Joueur1', hiddenTokens: 11 },
           { name: 'Joueur2', hiddenTokens: 11 },
@@ -123,6 +141,7 @@ describe('Gestion du plateau', () => {
           visibleCard: 29,
           visibleTokens: 4,
         },
+        history: [],
         playerTokens: [
           { name: 'Joueur1', hiddenTokens: 11 },
           { name: 'Joueur2', hiddenTokens: 11 },
@@ -146,6 +165,7 @@ describe('Gestion du plateau', () => {
           visibleCard: 29, // DOUBLON
           visibleTokens: 4,
         },
+        history: [],
         playerTokens: [
           { name: 'Joueur1', hiddenTokens: 11 },
           { name: 'Joueur2', hiddenTokens: 11 },
@@ -169,6 +189,7 @@ describe('Gestion du plateau', () => {
           visibleCard: 3, // DOUBLON
           visibleTokens: 4,
         },
+        history: [],
         playerTokens: [
           { name: 'Joueur1', hiddenTokens: 11 },
           { name: 'Joueur2', hiddenTokens: 11 },
@@ -179,6 +200,32 @@ describe('Gestion du plateau', () => {
       expect(() => board = new Board({ fullBoardState: invalidState3 })).toThrowError('INVALID_BOARD_STATE');
     });
 
+    xit('Initialise un plateau a partir de la vue d\'un jour (playerState)', () => {
+      const playerBoardState: IPlayerBoardState = {
+        activePlayer: 'Joueur2',
+        board: {
+          deckSize: 5,
+          playerCards: [
+            { name: 'Joueur1', cards: [4, 5] },
+            { name: 'Joueur2', cards: [6, 7] },
+            { name: 'Joueur3', cards: [8, 9] },
+          ],
+          visibleCard: 29,
+          visibleTokens: 4,
+        },
+        history: [],
+        privateData: {
+          currentScore: 8 - 3,
+          hiddenTokens: 3,
+          playerName: 'Joueur3',
+        },
+        turn: 30,
+      };
+      expect(() => board = new Board({ playerBoardState })).not.toThrowError();
+
+      const state = board.getPlayerState('Joueur3');
+      expect(state).toEqual(playerBoardState);
+    });
   });
 
   describe('Accéder aux informations du plateau de jeu vu par un joueur:', () => {
@@ -199,6 +246,31 @@ describe('Gestion du plateau', () => {
           visibleCard: 35,
           visibleTokens: 3,
         },
+        history: [
+          {draw: 3},
+          {player: 'Joueur1', action: GameAction.Take, card: 3},
+          {draw: 4},
+          {player: 'Joueur1', action: GameAction.Take, card: 4},
+          {draw: 5},
+          {player: 'Joueur1', action: GameAction.Take, card: 5},
+          {draw: 6},
+          {player: 'Joueur2', action: GameAction.Take, card: 6},
+          {draw: 7},
+          {player: 'Joueur2', action: GameAction.Take, card: 7},
+          {draw: 8},
+          {player: 'Joueur3', action: GameAction.Take, card: 8},
+          {draw: 9},
+          {player: 'Joueur3', action: GameAction.Take, card: 9},
+          {draw: 10},
+          {player: 'Joueur3', action: GameAction.Take, card: 10},
+          {draw: 11},
+          {player: 'Joueur3', action: GameAction.Take, card: 11},
+          {draw: 12},
+          {player: 'Joueur3', action: GameAction.Pay, card: 12},
+          {player: 'Joueur1', action: GameAction.Pay, card: 12},
+          {draw: 15},
+          {player: 'Joueur2', action: GameAction.Pay, card: 15},
+        ],
         playerTokens: [
           { name: 'Joueur1', hiddenTokens: 11 },
           { name: 'Joueur2', hiddenTokens: 10 },
@@ -247,6 +319,34 @@ describe('Gestion du plateau', () => {
       ]);
     });
 
+    it('Accède à l\'historique de la partie via l\'état du joueur', () => {
+      expect(playerState.history).toEqual([
+        {draw: 3},
+        {player: 'Joueur1', action: GameAction.Take, card: 3},
+        {draw: 4},
+        {player: 'Joueur1', action: GameAction.Take, card: 4},
+        {draw: 5},
+        {player: 'Joueur1', action: GameAction.Take, card: 5},
+        {draw: 6},
+        {player: 'Joueur2', action: GameAction.Take, card: 6},
+        {draw: 7},
+        {player: 'Joueur2', action: GameAction.Take, card: 7},
+        {draw: 8},
+        {player: 'Joueur3', action: GameAction.Take, card: 8},
+        {draw: 9},
+        {player: 'Joueur3', action: GameAction.Take, card: 9},
+        {draw: 10},
+        {player: 'Joueur3', action: GameAction.Take, card: 10},
+        {draw: 11},
+        {player: 'Joueur3', action: GameAction.Take, card: 11},
+        {draw: 12},
+        {player: 'Joueur3', action: GameAction.Pay, card: 12},
+        {player: 'Joueur1', action: GameAction.Pay, card: 12},
+        {draw: 15},
+        {player: 'Joueur2', action: GameAction.Pay, card: 15},
+      ]);
+    });
+
     it('Accède au tour courrant via via l\'état du joueur', () => {
       expect(playerState.turn).toEqual(30);
     });
@@ -270,6 +370,31 @@ describe('Gestion du plateau', () => {
           visibleCard: 35,
           visibleTokens: 3,
         },
+        history: [
+          {draw: 3},
+          {player: 'Joueur1', action: GameAction.Take, card: 3},
+          {draw: 4},
+          {player: 'Joueur1', action: GameAction.Take, card: 4},
+          {draw: 5},
+          {player: 'Joueur1', action: GameAction.Take, card: 5},
+          {draw: 6},
+          {player: 'Joueur2', action: GameAction.Take, card: 6},
+          {draw: 7},
+          {player: 'Joueur2', action: GameAction.Take, card: 7},
+          {draw: 8},
+          {player: 'Joueur3', action: GameAction.Take, card: 8},
+          {draw: 9},
+          {player: 'Joueur3', action: GameAction.Take, card: 9},
+          {draw: 10},
+          {player: 'Joueur3', action: GameAction.Take, card: 10},
+          {draw: 11},
+          {player: 'Joueur3', action: GameAction.Take, card: 11},
+          {draw: 12},
+          {player: 'Joueur3', action: GameAction.Pay, card: 12},
+          {player: 'Joueur1', action: GameAction.Pay, card: 12},
+          {draw: 15},
+          {player: 'Joueur2', action: GameAction.Pay, card: 15},
+        ],
         playerTokens: [
           { name: 'Joueur1', hiddenTokens: 11 },
           { name: 'Joueur2', hiddenTokens: 10 },
@@ -297,6 +422,35 @@ describe('Gestion du plateau', () => {
     it('Accède aux infos du board via l\'état complet du plateau', () => {
       expect(typeof fullState.board).toBe('object');
       expect(fullState.board).not.toBeUndefined();
+    });
+
+    it('Accède à l\'historique de la partie via l\'état complet du plateau', () => {
+      // console.log(fullState.history);
+      expect(fullState.history).toEqual([
+        {draw: 3},
+        {player: 'Joueur1', action: GameAction.Take, card: 3},
+        {draw: 4},
+        {player: 'Joueur1', action: GameAction.Take, card: 4},
+        {draw: 5},
+        {player: 'Joueur1', action: GameAction.Take, card: 5},
+        {draw: 6},
+        {player: 'Joueur2', action: GameAction.Take, card: 6},
+        {draw: 7},
+        {player: 'Joueur2', action: GameAction.Take, card: 7},
+        {draw: 8},
+        {player: 'Joueur3', action: GameAction.Take, card: 8},
+        {draw: 9},
+        {player: 'Joueur3', action: GameAction.Take, card: 9},
+        {draw: 10},
+        {player: 'Joueur3', action: GameAction.Take, card: 10},
+        {draw: 11},
+        {player: 'Joueur3', action: GameAction.Take, card: 11},
+        {draw: 12},
+        {player: 'Joueur3', action: GameAction.Pay, card: 12},
+        {player: 'Joueur1', action: GameAction.Pay, card: 12},
+        {draw: 15},
+        {player: 'Joueur2', action: GameAction.Pay, card: 15},
+      ]);
     });
 
     it('Accède au deck (board) via l\'état complet du plateau', () => {
@@ -344,6 +498,31 @@ describe('Gestion du plateau', () => {
           visibleCard: 35,
           visibleTokens: 3,
         },
+        history: [
+          {draw: 3},
+          {player: 'Joueur1', action: GameAction.Take, card: 3},
+          {draw: 4},
+          {player: 'Joueur1', action: GameAction.Take, card: 4},
+          {draw: 5},
+          {player: 'Joueur1', action: GameAction.Take, card: 5},
+          {draw: 6},
+          {player: 'Joueur2', action: GameAction.Take, card: 6},
+          {draw: 7},
+          {player: 'Joueur2', action: GameAction.Take, card: 7},
+          {draw: 8},
+          {player: 'Joueur3', action: GameAction.Take, card: 8},
+          {draw: 9},
+          {player: 'Joueur3', action: GameAction.Take, card: 9},
+          {draw: 10},
+          {player: 'Joueur3', action: GameAction.Take, card: 10},
+          {draw: 11},
+          {player: 'Joueur3', action: GameAction.Take, card: 11},
+          {draw: 12},
+          {player: 'Joueur3', action: GameAction.Pay, card: 12},
+          {player: 'Joueur1', action: GameAction.Pay, card: 12},
+          {draw: 15},
+          {player: 'Joueur2', action: GameAction.Pay, card: 15},
+        ],
         playerTokens: [
           { name: 'Joueur1', hiddenTokens: 11 },
           { name: 'Joueur2', hiddenTokens: 10 },
@@ -384,6 +563,7 @@ describe('Gestion du plateau', () => {
           visibleCard: 35,
           visibleTokens: 3,
         },
+        history: [],
         playerTokens: [
           { name: 'Joueur1', hiddenTokens: 11 },
           { name: 'Joueur2', hiddenTokens: 10 },
@@ -413,6 +593,7 @@ describe('Gestion du plateau', () => {
           visibleCard: 35,
           visibleTokens: 3,
         },
+        history: [],
         playerTokens: [
           { name: 'Joueur1', hiddenTokens: 11 },
           { name: 'Joueur2', hiddenTokens: 10 },
@@ -442,6 +623,7 @@ describe('Gestion du plateau', () => {
           visibleCard: undefined,
           visibleTokens: 3,
         },
+        history: [],
         playerTokens: [
           { name: 'Joueur1', hiddenTokens: 11 },
           { name: 'Joueur2', hiddenTokens: 10 },
@@ -471,6 +653,7 @@ describe('Gestion du plateau', () => {
           visibleCard: 35,
           visibleTokens: 3,
         },
+        history: [],
         playerTokens: [
           { name: 'Joueur1', hiddenTokens: 11 },
           { name: 'Joueur2', hiddenTokens: 10 },
@@ -500,6 +683,7 @@ describe('Gestion du plateau', () => {
           visibleCard: 35,
           visibleTokens: 3,
         },
+        history: [],
         playerTokens: [
           { name: 'Joueur1', hiddenTokens: 11 },
           { name: 'Joueur2', hiddenTokens: 10 },
@@ -532,6 +716,7 @@ describe('Gestion du plateau', () => {
           visibleCard: 35,
           visibleTokens: 3,
         },
+        history: [],
         playerTokens: [
           { name: 'Joueur1', hiddenTokens: 11 },
           { name: 'Joueur2', hiddenTokens: 10 },
@@ -555,6 +740,7 @@ describe('Gestion du plateau', () => {
       expect(newFullState.board.visibleTokens).toEqual(cardTokens + 1);
       expect(newFullState.board.playerCards.find((p) => p.name === player).cards.indexOf(card)).toEqual(-1);
       expect(newFullState.board.visibleCard).toEqual(card);
+      expect(newFullState.history.pop()).toEqual({ player: 'Joueur1', action: GameAction.Pay, card: 35 });
     });
 
     it('Echoue à résoudre l\'action PAY si le joueur actif n\'a pas de jeton:', () => {
@@ -570,6 +756,7 @@ describe('Gestion du plateau', () => {
           visibleCard: 35,
           visibleTokens: 3,
         },
+        history: [],
         playerTokens: [
           { name: 'Joueur1', hiddenTokens: 0 },
           { name: 'Joueur2', hiddenTokens: 10 },
@@ -594,6 +781,7 @@ describe('Gestion du plateau', () => {
           visibleCard: undefined,
           visibleTokens: 3,
         },
+        history: [],
         playerTokens: [
           { name: 'Joueur1', hiddenTokens: 11 },
           { name: 'Joueur2', hiddenTokens: 10 },
@@ -618,6 +806,7 @@ describe('Gestion du plateau', () => {
           visibleCard: 35,
           visibleTokens: 3,
         },
+        history: [],
         playerTokens: [
           { name: 'Joueur1', hiddenTokens: 11 },
           { name: 'Joueur2', hiddenTokens: 10 },
@@ -640,6 +829,7 @@ describe('Gestion du plateau', () => {
       expect(newFullState.board.playerCards.find((p) => p.name === player).cards.find((c) => c === card))
         .not.toBeUndefined();
       expect(newFullState.board.visibleCard).toBe(undefined);
+      expect(newFullState.history.pop()).toEqual({ player: 'Joueur1', action: GameAction.Take, card: 35 });
     });
 
     it('Echoue à résoudre l\'action TAKE s\'il n\'y a pas de carte visible:', () => {
@@ -655,6 +845,7 @@ describe('Gestion du plateau', () => {
           visibleCard: undefined,
           visibleTokens: 3,
         },
+        history: [],
         playerTokens: [
           { name: 'Joueur1', hiddenTokens: 11 },
           { name: 'Joueur2', hiddenTokens: 10 },
@@ -679,6 +870,7 @@ describe('Gestion du plateau', () => {
           visibleCard: undefined,
           visibleTokens: 0,
         },
+        history: [],
         playerTokens: [
           { name: 'Anna', hiddenTokens: 11 },
           { name: 'Bob', hiddenTokens: 0 },
@@ -690,6 +882,7 @@ describe('Gestion du plateau', () => {
       expect(() => board.revealNewCard()).not.toThrowError();
       const newState = board.getState();
       expect(newState.board.visibleCard).toEqual(6);
+      expect(newState.history.pop()).toEqual({ draw: 6 });
     });
 
     it('Echoue à révèler une nouvelle carte du deck s\'il y a déjà une carte révélée', () => {
@@ -705,6 +898,7 @@ describe('Gestion du plateau', () => {
           visibleCard: 35,
           visibleTokens: 3,
         },
+        history: [],
         playerTokens: [
           { name: 'Joueur1', hiddenTokens: 11 },
           { name: 'Joueur2', hiddenTokens: 10 },
@@ -729,6 +923,7 @@ describe('Gestion du plateau', () => {
           visibleCard: undefined,
           visibleTokens: 3,
         },
+        history: [],
         playerTokens: [
           { name: 'Joueur1', hiddenTokens: 11 },
           { name: 'Joueur2', hiddenTokens: 10 },
@@ -753,6 +948,7 @@ describe('Gestion du plateau', () => {
           visibleCard: 35,
           visibleTokens: 3,
         },
+        history: [],
         playerTokens: [
           { name: 'Joueur1', hiddenTokens: 11 },
           { name: 'Joueur2', hiddenTokens: 10 },
@@ -782,6 +978,7 @@ describe('Gestion du plateau', () => {
           visibleCard: undefined,
           visibleTokens: 0,
         },
+        history: [],
         playerTokens: [
           { name: 'Anna', hiddenTokens: 11 },
           { name: 'Bob', hiddenTokens: 0 },
@@ -806,6 +1003,12 @@ describe('Gestion du plateau', () => {
           visibleCard: undefined,
           visibleTokens: 0,
         },
+        history: [
+          {draw: 3},
+          {player: 'Anna', action: GameAction.Take, card: 3},
+          {draw: 4},
+          {player: 'Anna', action: GameAction.Take, card: 4},
+        ],
         playerTokens: [
           { name: 'Anna', hiddenTokens: 11 },
           { name: 'Bob', hiddenTokens: 0 },
@@ -830,6 +1033,14 @@ describe('Gestion du plateau', () => {
           visibleCard: undefined,
           visibleTokens: 0,
         },
+        history: [
+          {draw: 5},
+          {player: 'Anna', action: GameAction.Take, card: 5},
+          {draw: 25},
+          {player: 'Anna', action: GameAction.Take, card: 25},
+          {draw: 26},
+          {player: 'Anna', action: GameAction.Take, card: 26},
+        ],
         playerTokens: [
           { name: 'Anna', hiddenTokens: 2 },
           { name: 'Bob', hiddenTokens: 0 },
@@ -843,7 +1054,7 @@ describe('Gestion du plateau', () => {
     });
   });
 
-  describe('interface MCTS', () => {
+  describe('interface MCTS:', () => {
     it('Renvoi des actions de jeu possibles si une carte est visible (et pas des tirages)', () => {
       const fullBoardState: IFullBoardState = {
         activePlayer: 'Joueur1',
@@ -857,6 +1068,7 @@ describe('Gestion du plateau', () => {
           visibleCard: 35,
           visibleTokens: 3,
         },
+        history: [],
         playerTokens: [
           { name: 'Joueur1', hiddenTokens: 11 },
           { name: 'Joueur2', hiddenTokens: 10 },
@@ -884,6 +1096,7 @@ describe('Gestion du plateau', () => {
           visibleCard: undefined,
           visibleTokens: 3,
         },
+        history: [],
         playerTokens: [
           { name: 'Joueur1', hiddenTokens: 11 },
           { name: 'Joueur2', hiddenTokens: 10 },
@@ -911,6 +1124,7 @@ describe('Gestion du plateau', () => {
           visibleCard: 35,
           visibleTokens: 3,
         },
+        history: [],
         playerTokens: [
           { name: 'Joueur1', hiddenTokens: 11 },
           { name: 'Joueur2', hiddenTokens: 10 },
@@ -938,6 +1152,7 @@ describe('Gestion du plateau', () => {
           visibleCard: 3,
           visibleTokens: 0,
         },
+        history: [],
         playerTokens: [
           { name: 'Anna', hiddenTokens: 11 },
           { name: 'Bob', hiddenTokens: 0 },
@@ -963,6 +1178,26 @@ describe('Gestion du plateau', () => {
           visibleCard: undefined,
           visibleTokens: 0,
         },
+        history: [
+          {draw: 3},
+          {player: 'Anna', action: GameAction.Take, card: 3},
+          {draw: 4},
+          {player: 'Anna', action: GameAction.Take, card: 4},
+          {draw: 5},
+          {player: 'Anna', action: GameAction.Take, card: 5},
+          {draw: 6},
+          {player: 'Bob', action: GameAction.Take, card: 6},
+          {draw: 7},
+          {player: 'Bob', action: GameAction.Take, card: 7},
+          {draw: 8},
+          {player: 'Bob', action: GameAction.Take, card: 8},
+          {draw: 9},
+          {player: 'David', action: GameAction.Take, card: 9},
+          {draw: 10},
+          {player: 'David', action: GameAction.Take, card: 10},
+          {draw: 11},
+          {player: 'David', action: GameAction.Take, card: 11},
+        ],
         playerTokens: [
           { name: 'Anna', hiddenTokens: 11 },
           { name: 'Bob', hiddenTokens: 11 },
@@ -990,6 +1225,26 @@ describe('Gestion du plateau', () => {
           visibleCard: undefined,
           visibleTokens: 0,
         },
+        history: [
+          {draw: 3},
+          {player: 'Anna', action: GameAction.Take, card: 3},
+          {draw: 4},
+          {player: 'Anna', action: GameAction.Take, card: 4},
+          {draw: 5},
+          {player: 'Anna', action: GameAction.Take, card: 5},
+          {draw: 6},
+          {player: 'Bob', action: GameAction.Take, card: 6},
+          {draw: 7},
+          {player: 'Bob', action: GameAction.Take, card: 7},
+          {draw: 8},
+          {player: 'Bob', action: GameAction.Take, card: 8},
+          {draw: 9},
+          {player: 'David', action: GameAction.Take, card: 9},
+          {draw: 10},
+          {player: 'David', action: GameAction.Take, card: 10},
+          {draw: 11},
+          {player: 'David', action: GameAction.Take, card: 11},
+        ],
         playerTokens: [
           { name: 'Anna', hiddenTokens: 11 },
           { name: 'Bob', hiddenTokens: 11 },
@@ -1014,6 +1269,26 @@ describe('Gestion du plateau', () => {
           visibleCard: undefined,
           visibleTokens: 0,
         },
+        history: [
+          {draw: 3},
+          {player: 'Anna', action: GameAction.Take, card: 3},
+          {draw: 4},
+          {player: 'Anna', action: GameAction.Take, card: 4},
+          {draw: 5},
+          {player: 'Anna', action: GameAction.Take, card: 5},
+          {draw: 6},
+          {player: 'Bob', action: GameAction.Take, card: 6},
+          {draw: 7},
+          {player: 'Bob', action: GameAction.Take, card: 7},
+          {draw: 8},
+          {player: 'Bob', action: GameAction.Take, card: 8},
+          {draw: 9},
+          {player: 'David', action: GameAction.Take, card: 9},
+          {draw: 10},
+          {player: 'David', action: GameAction.Take, card: 10},
+          {draw: 11},
+          {player: 'David', action: GameAction.Take, card: 11},
+        ],
         playerTokens: [
           { name: 'Anna', hiddenTokens: 11 },
           { name: 'Bob', hiddenTokens: 11 },
@@ -1038,6 +1313,7 @@ describe('Gestion du plateau', () => {
           visibleCard: 35,
           visibleTokens: 3,
         },
+        history: [],
         playerTokens: [
           { name: 'Joueur1', hiddenTokens: 11 },
           { name: 'Joueur2', hiddenTokens: 10 },
@@ -1064,6 +1340,7 @@ describe('Gestion du plateau', () => {
           visibleCard: 35,
           visibleTokens: 3,
         },
+        history: [],
         playerTokens: [
           { name: 'Joueur1', hiddenTokens: 11 },
           { name: 'Joueur2', hiddenTokens: 10 },
@@ -1092,6 +1369,7 @@ describe('Gestion du plateau', () => {
           visibleCard: undefined,
           visibleTokens: 0,
         },
+        history: [],
         playerTokens: [
           { name: 'Anna', hiddenTokens: 11 },
           { name: 'Bob', hiddenTokens: 11 },
@@ -1104,6 +1382,7 @@ describe('Gestion du plateau', () => {
       const newState = board.getPlayerState();
       expect(newState.board.deckSize).toEqual(3 - 1);
       expect(newState.board.visibleCard).toEqual(10);
+      expect(newState.history.pop()).toEqual({ draw: 10 });
     });
 
     it('Echoue a faire apparaitre une carte déjà révélée sur un performMove(card)', () => {
@@ -1119,6 +1398,10 @@ describe('Gestion du plateau', () => {
           visibleCard: undefined,
           visibleTokens: 0,
         },
+        history: [
+          {draw: 3},
+          {player: 'Anna', action: GameAction.Take, card: 3},
+        ],
         playerTokens: [
           { name: 'Anna', hiddenTokens: 11 },
           { name: 'Bob', hiddenTokens: 11 },
@@ -1143,6 +1426,7 @@ describe('Gestion du plateau', () => {
           visibleCard: 3,
           visibleTokens: 0,
         },
+        history: [],
         playerTokens: [
           { name: 'Anna', hiddenTokens: 11 },
           { name: 'Bob', hiddenTokens: 11 },
@@ -1167,6 +1451,7 @@ describe('Gestion du plateau', () => {
           visibleCard: undefined,
           visibleTokens: 0,
         },
+        history: [],
         playerTokens: [
           { name: 'Anna', hiddenTokens: 11 },
           { name: 'Bob', hiddenTokens: 11 },
@@ -1191,6 +1476,7 @@ describe('Gestion du plateau', () => {
           visibleCard: undefined,
           visibleTokens: 0,
         },
+        history: [],
         playerTokens: [
           { name: 'Anna', hiddenTokens: 11 },
           { name: 'Bob', hiddenTokens: 11 },
@@ -1215,6 +1501,7 @@ describe('Gestion du plateau', () => {
           visibleCard: 3,
           visibleTokens: 0,
         },
+        history: [],
         playerTokens: [
           { name: 'Anna', hiddenTokens: 11 },
           { name: 'Bob', hiddenTokens: 11 },
@@ -1240,6 +1527,26 @@ describe('Gestion du plateau', () => {
           visibleCard: undefined,
           visibleTokens: 0,
         },
+        history: [
+          {draw: 3},
+          {player: 'Anna', action: GameAction.Take, card: 3},
+          {draw: 4},
+          {player: 'Anna', action: GameAction.Take, card: 4},
+          {draw: 5},
+          {player: 'Anna', action: GameAction.Take, card: 5},
+          {draw: 6},
+          {player: 'Bob', action: GameAction.Take, card: 6},
+          {draw: 7},
+          {player: 'Bob', action: GameAction.Take, card: 7},
+          {draw: 8},
+          {player: 'Bob', action: GameAction.Take, card: 8},
+          {draw: 9},
+          {player: 'David', action: GameAction.Take, card: 9},
+          {draw: 10},
+          {player: 'David', action: GameAction.Take, card: 10},
+          {draw: 11},
+          {player: 'David', action: GameAction.Take, card: 11},
+        ],
         playerTokens: [
           { name: 'Anna', hiddenTokens: 11 },
           { name: 'Bob', hiddenTokens: 11 },

@@ -29,6 +29,7 @@ export default class Board extends MctsGame {
    */
   constructor(options?: {
     fullBoardState?: IFullBoardState,
+    playerBoardState?: IPlayerBoardState,
     players?: string[],
   }) {
     super();
@@ -50,8 +51,44 @@ export default class Board extends MctsGame {
             : undefined,
           visibleTokens: options.fullBoardState.board.visibleTokens,
         },
+        history: options.fullBoardState.history.map((h) => h.draw
+          ? { draw: h.draw }
+          : { player: h.player, action: h.action, card: h.card }),
+          // ? { player: h.player, action: h.action, card: h.card }
+          // : { player: h.player, action: h.action }),
         playerTokens: options.fullBoardState.playerTokens,
         turn: options.fullBoardState.turn,
+      };
+    } else if (options.playerBoardState) {
+      // if (!this.isStateValid(options.fullBoardState)) {
+      //   throw new Error('INVALID_BOARD_STATE');
+      // }
+      const excludedCards = [options.playerBoardState.board.visibleCard]
+        .concat(options.playerBoardState.board.playerCards
+          .map((p) => p.cards)
+          .reduce((prev, curr) => prev.concat(curr), []));
+      this.state = {
+        activePlayer: options.playerBoardState.activePlayer,
+        board: {
+          deck: new Deck({
+            excludedCardValues: excludedCards,
+            size: options.playerBoardState.board.deckSize,
+           }),
+          playerCards: options.playerBoardState.board.playerCards
+            .map((p) => ({ name: p.name, cards: p.cards.map((c) => new Card(c))})),
+          visibleCard: options.playerBoardState.board.visibleCard
+            ? new Card(options.playerBoardState.board.visibleCard)
+            : undefined,
+          visibleTokens: options.playerBoardState.board.visibleTokens,
+        },
+        history: options.fullBoardState.history.map((h) => h.draw
+          ? { draw: h.draw }
+          : { player: h.player, action: h.action, card: h.card }),
+          // ? { player: h.player, action: h.action, card: h.card }
+          // : { player: h.player, action: h.action }),
+        playerTokens: options.playerBoardState.board.playerCards
+          .map((p) => ({ name: p.name, hiddenTokens: 1 })),
+        turn: options.playerBoardState.turn,
       };
     } else if (options.players) {
       if (options.players.length === 0 || options.players.length > 5) {
@@ -66,6 +103,7 @@ export default class Board extends MctsGame {
           visibleCard: temporaryDeck.drawNextCard(),
           visibleTokens: 0,
         },
+        history: [],
         playerTokens: options.players.map((p) => ({ name: p, hiddenTokens: 11 })),
         turn: 1,
       };
@@ -93,6 +131,9 @@ export default class Board extends MctsGame {
         visibleCard: this.state.board.visibleCard ? this.state.board.visibleCard.getValue() : undefined,
         visibleTokens: this.state.board.visibleTokens,
       },
+      history: this.state.history.map((h) => h.draw
+        ? { draw: h.draw }
+        : { player: h.player, action: h.action, card: h.card }),
       privateData: {
         currentScore: this.getPlayerScore(player),
         hiddenTokens: this.state.playerTokens.find((p) => p.name === player).hiddenTokens,
@@ -112,6 +153,9 @@ export default class Board extends MctsGame {
         visibleCard: this.state.board.visibleCard ? this.state.board.visibleCard.getValue() : undefined,
         visibleTokens: this.state.board.visibleTokens,
       },
+      history: this.state.history.map((h) => h.draw
+        ? { draw: h.draw }
+        : { player: h.player, action: h.action, card: h.card }),
       playerTokens: this.state.playerTokens.map((p) => ({ name: p.name, hiddenTokens: p.hiddenTokens })),
       turn: this.state.turn,
     };
@@ -140,6 +184,8 @@ export default class Board extends MctsGame {
     } else {
       this.state.board.visibleTokens++;
       this.state.playerTokens.find((p) => p.name === this.state.activePlayer).hiddenTokens--;
+      this.state.history.push(
+        { player: this.state.activePlayer, action: GameAction.Pay, card: this.state.board.visibleCard.getValue() });
     }
   }
 
@@ -155,6 +201,8 @@ export default class Board extends MctsGame {
         + this.state.board.visibleTokens;
 
       this.state.board.visibleTokens = 0;
+      this.state.history.push(
+        { player: this.state.activePlayer, action: GameAction.Take, card: this.state.board.visibleCard.getValue() });
       this.state.board.visibleCard = undefined;
     }
   }
@@ -179,6 +227,7 @@ export default class Board extends MctsGame {
 
     try {
       this.state.board.visibleCard = this.state.board.deck.drawNextCard();
+      this.state.history.push({ draw: this.state.board.visibleCard.getValue() });
     } catch (e) {
       const err: Error = e;
       if (err.message === 'EMPTY_DECK') {
@@ -232,6 +281,7 @@ export default class Board extends MctsGame {
 
   private isStateValid(state: IFullBoardState): boolean {
     if (!state.board.playerCards.find((p) => p.name === state.activePlayer)) {
+      // le nom du joueur actif n'apparait pas dans les playerCards
       return false;
     }
     if (!state.board.playerCards.every((pc) => state.playerTokens.find((pt) => pc.name === pt.name) !== undefined )) {
@@ -240,10 +290,48 @@ export default class Board extends MctsGame {
     const allCards = state.board.deck
       .concat([state.board.visibleCard])
       .concat(state.board.playerCards.map((p) => p.cards).reduce((prev, curr) => prev.concat(curr), []));
-    // console.log(allCards, new Set(allCards));
+
     if (allCards.length !== new Set(allCards).size) {
       return false;
     }
+    if (!state.history.every((h) => h.player ? state.board.playerCards
+        .find(({ name, cards }) => name === h.player) !== undefined : true)) {
+      // tous les noms de joueurs apparaissant dans l'historique doivent apparaitre pas dans les playerCards
+      return false;
+    }
+    if (!state.history.every((h) => h.player && h.action === GameAction.Take
+      ? state.board.playerCards
+          .find(({ name, cards }) => name === h.player).cards
+          .find((cardValue) => cardValue === h.card) !== undefined
+      : true)) {
+      // toutes cartes déclarées prises dans l'historique doivent apparaitre dans les playerCards
+      return false;
+    }
+    if (!state.board.playerCards.every(({name, cards}) => cards
+      .every((card) => state.history
+        .find((h) => h.player === name && h.card === card && h.action === GameAction.Take) !== undefined))) {
+      // toutes les cartes qui apparaissent dans les playerCards doivent être déclarées prises dans l'historique
+      return false;
+    }
+    if (state.history.length > 0 && state.history[0].draw === undefined) {
+      // la première action dans l'historique est un draw
+      return false;
+    }
+    if (!state.history.every((h, i, arr) => h.action === GameAction.Take && arr[i + 1] !== undefined
+      ? arr[i + 1].draw !== undefined
+      : true)) {
+      // toutes les actions Take devraient être suivi par des Draw
+      console.log(state.history);
+      return false;
+    }
+    // if (!true) {
+    //   // toutes les actions PAY doivent être suivi par une action du joueur suivant
+    //   return false;
+    // }
+    // if (!true) {
+    //   // toutes les actions des joueurs doivent concernent la dernière carte a avoir été révélée
+    //   return false;
+    // }
     return true;
   }
 
@@ -332,6 +420,7 @@ export default class Board extends MctsGame {
         }
       }
       this.state.board.visibleCard = card;
+      this.state.history.push({ draw: this.state.board.visibleCard.getValue() });
     }
   }
   //#endregion Méthodes privées ---------------------------------------------------------
@@ -348,6 +437,12 @@ interface IBoardState {
       cards: Card[];
     }>;
   };
+  history: Array<{
+    player?: string;
+    action?: GameAction;
+    card?: number;
+    draw?: number;
+  }>;
   playerTokens: Array<{
     name: string;
     hiddenTokens: number;
@@ -366,6 +461,12 @@ export interface IFullBoardState {
       cards: number[];
     }>;
   };
+  history: Array<{
+    player?: string;
+    action?: GameAction;
+    card?: number;
+    draw?: number;
+  }>;
   playerTokens: Array<{
     name: string;
     hiddenTokens: number;
@@ -389,5 +490,11 @@ export interface IPlayerBoardState {
       cards: number[];
     }>;
   };
+  history: Array<{
+    player?: string;
+    action?: GameAction;
+    card?: number;
+    draw?: number;
+  }>;
   turn: number;
 }

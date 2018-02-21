@@ -103,4 +103,25 @@ describe('Manipuler un deck:', () => {
     deckState.reverse().forEach((v) => expect(deck.drawNextCard().getValue()).toEqual(v));
     expect(deck.getSize()).toEqual(0);
   });
+
+  it('Initialise un deck avec une liste de carte donnée', () => {
+    const deck = new Deck({ cardValues: [3, 5, 7, 8, 35]});
+    const deckState: TDeckState = deck.getState();
+    expect(deckState).toEqual([3, 5, 7, 8, 35]);
+  });
+
+  it('Initialise un deck avec une taille donnée et une liste de carte exclues', () => {
+    const deck = new Deck({ size: 28, excludedCardValues: [3, 5, 7, 8, 35]});
+    const deckState: TDeckState = deck.getState();
+    expect(deckState.length).toEqual(28);
+    expect(deckState).not.toContain(3);
+    expect(deckState).not.toContain(5);
+    expect(deckState).not.toContain(7);
+    expect(deckState).not.toContain(8);
+    expect(deckState).not.toContain(35);
+  });
+
+  it('Echoue a initialiser le deck si le nombre de cartes exclues ne permet pas d\'atteindre la taille requise', () => {
+    expect(() => new Deck({ size: 29, excludedCardValues: [3, 5, 7, 8, 35]})).toThrowError('TOO_MUCH_EXCLUDED_CARDS');
+  });
 });
