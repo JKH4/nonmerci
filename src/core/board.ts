@@ -132,19 +132,6 @@ export default class Board extends MctsGame {
   //#endregion Getters ------------------------------------------------------------------
 
   //#region Actions #####################################################################
-  public incrementTurn() {
-    this.state.turn++;
-  }
-
-  public switchActivePlayer() {
-    const playerList = this.state.playerTokens.map((p) => p.name);
-    if (playerList.indexOf(this.state.activePlayer) === playerList.length - 1) {
-      this.state.activePlayer = playerList[0];
-    } else {
-      this.state.activePlayer = playerList[playerList.indexOf(this.state.activePlayer) + 1];
-    }
-  }
-
   public pay() {
     if (this.state.playerTokens.find((p) => p.name === this.state.activePlayer).hiddenTokens <= 0) {
       throw new Error ('NOT_ENOUGH_TOKENS');
@@ -172,6 +159,19 @@ export default class Board extends MctsGame {
     }
   }
 
+  public incrementTurn() {
+    this.state.turn++;
+  }
+
+  public switchActivePlayer() {
+    const playerList = this.state.playerTokens.map((p) => p.name);
+    if (playerList.indexOf(this.state.activePlayer) === playerList.length - 1) {
+      this.state.activePlayer = playerList[0];
+    } else {
+      this.state.activePlayer = playerList[playerList.indexOf(this.state.activePlayer) + 1];
+    }
+  }
+
   public revealNewCard() {
     if (this.state.board.visibleCard !== undefined) {
       throw new Error('CARD_ALREADY_REVEALED');
@@ -194,26 +194,9 @@ export default class Board extends MctsGame {
   //#region Actions MCTS ################################################################
   public getPossibleMoves(): GameAction[] | Card[] {
     if (this.isDecisionNode()) {
-      const moves: GameAction[] = [];
-      if (this.state.board.visibleCard) {
-        moves.push(GameAction.Take);
-        if (this.state.playerTokens.find((p) => p.name === this.state.activePlayer).hiddenTokens > 0) {
-          moves.push(GameAction.Pay);
-        }
-      }
-      return moves;
+      return this.getPossibleAction();
     } else {
-      if (this.state.board.deck.getSize() === 0) {
-        return [];
-      }
-      const revealedCards = this.getRevealedCards();
-      const possibleDraws: Card[] = [];
-      for (let i = 3; i < 36; i++) {
-        if (revealedCards.find((c) => c.getValue() === i) === undefined) {
-          possibleDraws.push(new Card(i));
-        }
-      }
-      return possibleDraws;
+      return this.getPossibleDraw();
     }
   }
   public getCurrentPlayer(): string {
@@ -221,55 +204,15 @@ export default class Board extends MctsGame {
   }
   public performMove(action?: GameAction | Card) {
     if (this.isDecisionNode()) {
-      if (action === GameAction.Pay) {
-        this.pay();
-        this.switchActivePlayer();
-      } else if (action === GameAction.Take || !action) {
-        // action par défaut
-        try {
-          this.take();
-        } catch (e) {
-          const err: Error = e;
-          if (err.message === 'END_OF_GAME') {
-            // console.log('performMove/END_OF_GAME');
-            // console.log(this.getScores());
-          } else {
-            throw e;
-          }
-        }
-      } else {
-        throw new Error('INVALID_ACTION');
-      }
-      this.incrementTurn();
+      this.performAction((action as GameAction));
     } else if (action instanceof Card) {
-      const card: Card = action;
-      const revealedCards = this.getRevealedCards();
-      if (this.state.board.visibleCard !== undefined) {
-        throw new Error('CARD_ALREADY_REVEALED');
-      }
-      if (revealedCards.find((c) => c.getValue() === card.getValue()) !== undefined) {
-        throw new Error('CARD_ALREADY_ON_BOARD');
-      } else {
-        try {
-          this.state.board.deck.drawNextCard();
-        } catch (e) {
-          const err: Error = e;
-          if (err.message === 'EMPTY_DECK') {
-            this.state.board.visibleCard = undefined;
-            throw new Error('END_OF_GAME');
-          } else {
-            throw e;
-          }
-        }
-        this.state.board.visibleCard = card;
-        // this.state.board.deck.drawNextCard();
-      }
+      this.performDraw((action as Card));
     } else {
       throw new Error('INVALID_ACTION');
     }
   }
   public getWinner(): string {
-    if (this.state.board.visibleCard === undefined) {
+    if (this.state.board.visibleCard === undefined && this.state.board.deck.getSize() === 0) {
       return this.getScores()[0][0];
     } else {
       return null;
@@ -318,6 +261,77 @@ export default class Board extends MctsGame {
       return true;
     } else {
       return false;
+    }
+  }
+
+  private getPossibleAction(): GameAction[] {
+    const moves: GameAction[] = [];
+    if (this.state.board.visibleCard) {
+      moves.push(GameAction.Take);
+      if (this.state.playerTokens.find((p) => p.name === this.state.activePlayer).hiddenTokens > 0) {
+        moves.push(GameAction.Pay);
+      }
+    }
+    return moves;
+  }
+
+  private getPossibleDraw(): Card[] {
+    if (this.state.board.deck.getSize() === 0) {
+      return [];
+    }
+    const revealedCards = this.getRevealedCards();
+    const possibleDraws: Card[] = [];
+    for (let i = 3; i < 36; i++) {
+      if (revealedCards.find((c) => c.getValue() === i) === undefined) {
+        possibleDraws.push(new Card(i));
+      }
+    }
+    return possibleDraws;
+  }
+
+  private performAction(action?: GameAction) {
+    if (action === GameAction.Pay) {
+      this.pay();
+      this.switchActivePlayer();
+    } else if (action === GameAction.Take || !action) {
+      // action par défaut
+      try {
+        this.take();
+      } catch (e) {
+        const err: Error = e;
+        if (err.message === 'END_OF_GAME') {
+          // console.log('performMove/END_OF_GAME');
+          // console.log(this.getScores());
+        } else {
+          throw e;
+        }
+      }
+    } else {
+      throw new Error('INVALID_ACTION');
+    }
+    this.incrementTurn();
+  }
+
+  private performDraw(card: Card) {
+    const revealedCards = this.getRevealedCards();
+    if (this.state.board.visibleCard !== undefined) {
+      throw new Error('CARD_ALREADY_REVEALED');
+    }
+    if (revealedCards.find((c) => c.getValue() === card.getValue()) !== undefined) {
+      throw new Error('CARD_ALREADY_ON_BOARD');
+    } else {
+      try {
+        this.state.board.deck.drawNextCard();
+      } catch (e) {
+        const err: Error = e;
+        if (err.message === 'EMPTY_DECK') {
+          this.state.board.visibleCard = undefined;
+          throw new Error('END_OF_GAME');
+        } else {
+          throw e;
+        }
+      }
+      this.state.board.visibleCard = card;
     }
   }
   //#endregion Méthodes privées ---------------------------------------------------------
