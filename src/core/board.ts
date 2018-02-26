@@ -426,6 +426,166 @@ export default class Board extends MctsGame {
   //#endregion Méthodes privées ---------------------------------------------------------
 }
 
+//#region Fonctions utilitaires #########################################################
+export function extractAllCardValues(state: IFullBoardState): number[] {
+  return [
+    state.board.visibleCard,
+    ...state.board.deck,
+    ...state.board.playerCards
+      .map((p) => p.cards)
+      .reduce((prev, curr) => [...prev, ...curr], []),
+  ].filter((x) => x !== undefined);
+}
+
+// export function validateState(state: IFullBoardState) {
+//   // 1) valider la structure de l'objet ==> on fait confiance à TS
+//   // 2) valider la cohérence de l'objet
+//   // 2.a) valider la cohénrece de l'état courrant
+//   // 2.b) valider la cohérence de l'historique
+//   // 2.c) valider la cohérence état courrant / historique
+// }
+
+export function validateCurrentStateConsistency(state: IFullBoardState) {
+  // Joueurs ############################################################################
+  // - activePlayer <> playerCards <> playerTokens
+  if (state.board.playerCards.find((p) => p.name === state.activePlayer) === undefined) {
+    throw new Error('ACTIVE_PLAYER_NOT_IN_PLAYER_LIST');
+  }
+
+  if (
+    state.board.playerCards.length !== state.playerTokens.length ||
+    !state.board.playerCards.every((pc, i) => pc.name === state.playerTokens[i].name) ||
+    !state.playerTokens.every((pt, i) => pt.name === state.board.playerCards[i].name)
+  ) {
+    throw new Error('PLAYERCARDS_DONT_MATCH_PLAYERTOKENS');
+  }
+
+  // - playerCards/playerTokens entre 3 et 5
+  if (state.board.playerCards.length < 3 || state.board.playerCards.length > 5) {
+    throw new Error('INVALID_NUMBER_OF_PLAYER');
+  }
+
+  // Cartes #############################################################################
+  // - toutes les cartes sont initialisables (visibleCard, Deck, playerCards)
+  const allCardsValues = extractAllCardValues(state);
+  allCardsValues.map((v) => new Card(v)); // lève une erreur si pas initialisable
+
+  // - pas de doublons (visibleCard, Deck, playerCards)
+  if ([...new Set(allCardsValues)].length !== allCardsValues.length) {
+    throw new Error('DUPLICATED_CARDS');
+  }
+
+  // Deck ###############################################################################
+  // Aucun test
+
+  // Tokens #############################################################################
+  // - total tokens = 11 * nb joueurs
+  const allTokens = state.board.visibleTokens
+    + state.playerTokens
+      .map(({name, hiddenTokens}) => hiddenTokens)
+      .reduce((prev, curr) => prev + curr, 0);
+  if (allTokens !== (11 * state.playerTokens.length)) {
+    throw new Error('INVALID_TOTAL_TOKENS');
+  }
+
+  // - visibleTokens = 0 si visibleCard = undefined
+  if (state.board.visibleTokens && (state.board.visibleCard === undefined)) {
+    throw new Error('VISIBLE_TOKENS_WITHOUT_VISIBLE_CARD');
+  }
+
+  // Turn ###############################################################################
+  // - entier <= 0
+  if (!Number.isInteger(state.turn) || state.turn < 0) {
+    throw new Error('INVALID_TURN');
+  }
+}
+
+export function validateHistoryConsistency(state: IFullBoardState) {
+  // Présence de l'historique ###########################################################
+  if (!state.history2) {
+    throw new Error('NO_HISTORY_AVAILABLE');
+  }
+
+  // Ordre des entrées ##################################################################
+  // - Première entrée Init
+  if (!state.history2[0] || state.history2[0].type !== HistoryLineType.Init) {
+    throw new Error('FIRST_HISTORY_LINE_SHOULD_BE_INIT');
+  }
+
+  // - Après un Take => Draw
+  if (!state.history2.every((line, i, arr) => line.payload !== GameAction.Take ||
+    (arr[i + 1] === undefined || arr[i + 1].type === HistoryLineType.Draw))) {
+    throw new Error('TAKE_SHOULD_BE_FOLLOWED_BY_DRAW');
+  }
+
+  // - Après Draw => Take ou Pay
+  if (!state.history2.every((line, i, arr) => line.type !== HistoryLineType.Draw ||
+    (arr[i + 1] === undefined || arr[i + 1].payload === GameAction.Pay || arr[i + 1].payload === GameAction.Take))) {
+    throw new Error('DRAW_SHOULD_BE_FOLLOWED_BY_GAMEACTION');
+  }
+
+  // - Après Pay => Take ou Pay
+  if (!state.history2.every((line, i, arr) => line.payload !== GameAction.Pay ||
+    (arr[i + 1] === undefined || arr[i + 1].payload === GameAction.Pay || arr[i + 1].payload === GameAction.Take))) {
+    throw new Error('PAY_SHOULD_BE_FOLLOWED_BY_GAMEACTION');
+  }
+
+  // Structure des entrées ##############################################################
+  // - entrée Init
+  state.history2
+    .filter((line) => line.type === HistoryLineType.Init)
+    .forEach((line) =>  validateCurrentStateConsistency((line.payload as IFullBoardState)));
+
+  // - entrée action Draw : carte initialisable
+  state.history2
+    .filter((line) => line.type === HistoryLineType.Draw)
+    .forEach((line) => new Card((line.payload as number)));
+
+  // Enchainement des lignes : CARTES ###################################################
+  // - Si Init.visibleCard undefined, entrée suivante = Draw
+  if (!state.history2.every((line, i, arr) => {
+    if (line.type === HistoryLineType.Init && (line.payload as IHistoryInit).board.visibleCard === undefined) {
+      return arr[i + 1 ] === undefined || arr[i + 1].type === HistoryLineType.Draw;
+    } else {
+      return true;
+    }
+  })) {
+    throw new Error('INIT_WITHOUT_VISIBLE_CARD_SHOULD_BE_FOLLOWED_BY_DRAW');
+  }
+  // - Pas 2 fois Draw X
+  const draws = state.history2
+    .filter(({type, payload}) => type === HistoryLineType.Draw)
+    .map(({type, payload}) => payload as number);
+
+  if (draws.length !== new Set(draws).size) {
+    throw new Error('DUPLICATE_DRAWS');
+  }
+  // Enchainement des lignes : TOKENS ###################################################
+  // - Pour chaque Pay => joueur actif a suffisamment de jeton
+  // TBD
+
+  // annulé
+  // - Après Draw X => tous les Pay/Take concerne X jusqu'au prochain Draw
+  // - Après P1 Take => Draw puis P1 Take ou Pay
+  // - Après P1 Pay => P2 Take ou Pay
+  // - Pas 2 fois Take X
+  // Enchainement des lignes : JOUEURS
+  // - Après Init => Take ou Pay de Init.activePlayer
+}
+
+export function validateCurrentStateVsHistoryConsistency(state: IFullBoardState) {
+  // Joueurs
+  // - les joueurs dans l'état courrant correspondent aux joueurs dans History.Init
+  // Cartes
+  // Deck
+  // Tokens
+  // Actions
+  // Turn
+
+  // Etat courrant correspond à all History action resolved !
+}
+//#endregion  Fonctions utilitaires -----------------------------------------------------
+
 interface IBoardState {
   activePlayer: string;
   board: {
@@ -443,6 +603,7 @@ interface IBoardState {
     card?: number;
     draw?: number;
   }>;
+  history2?: IHistoryLine[];
   playerTokens: Array<{
     name: string;
     hiddenTokens: number;
@@ -467,6 +628,7 @@ export interface IFullBoardState {
     card?: number;
     draw?: number;
   }>;
+  history2?: IHistoryLine[];
   playerTokens: Array<{
     name: string;
     hiddenTokens: number;
@@ -497,4 +659,34 @@ export interface IPlayerBoardState {
     draw?: number;
   }>;
   turn: number;
+}
+
+export interface IHistoryLine {
+  type: HistoryLineType;
+  payload: IHistoryInit | GameAction | number;
+}
+export enum HistoryLineType {
+  Init = 'Init',
+  Draw = 'Draw',
+  GameAction = 'GameAction',
+}
+export interface IHistoryInit {
+  activePlayer: string;
+  board: {
+    deck: number[];
+    visibleCard: number;
+    visibleTokens: number;
+    playerCards: Array<{
+      name: string;
+      cards: number[];
+    }>;
+  };
+  playerTokens: Array<{
+    name: string;
+    hiddenTokens: number;
+  }>;
+  turn: number;
+}
+interface IHistoryDraw {
+  draw: number;
 }
