@@ -27,14 +27,30 @@ export default class MCTS {
 
   public selectMove() {
     const start = new Date().getTime();
+    let end = new Date().getTime();
     let round;
     let currentNode;
-    for (round = 0; round < this.rounds && (new Date().getTime() - start < 30000); round += 1) {
-      // if (((round + 1) % 100) === 0) {
-      //   process.stdout.write('!\r\n');
-      // } else {
-      //   process.stdout.write('.');
-      // }
+    for (round = 0; round < this.rounds && (end - start < 30000); round += 1) {
+      if (((round + 1) % 100) === 0) {
+        process.stdout.write('!\r\n');
+      } else {
+        process.stdout.write('.');
+      }
+      // test optimisation JKH
+      if (this.rootNode.getChildren().length === 0) {
+        throw new Error('NO_NEXT_MOVE');
+        // const onlyMove = _(this.rootNode.getChildren()).sortBy('visits').last().move;
+        // process.stdout.write('only move: [' + JSON.stringify(onlyMove) + '], time: '
+        //   + (new Date().getTime() - start) + ' ms\r\n');
+        // return onlyMove;
+      }
+      if (this.rootNode.getChildren().length === 1) {
+        const onlyMove = _(this.rootNode.getChildren()).sortBy('visits').last().move;
+        console.log('\r\nOnly move: [' + JSON.stringify(onlyMove) + ']');
+        console.log('Thinking Time: ' + (new Date().getTime() - start) + ' ms');
+        console.log('Win ratio: ...');
+        return onlyMove;
+      } // fin test optimisation JKH
       currentNode = this.rootNode;
       this.rootNode.visits += 1;
       while (!_.isEmpty(currentNode.getChildren())) {
@@ -46,13 +62,22 @@ export default class MCTS {
         currentNode.wins[winner] = (currentNode.wins[winner] || 0) + 1;
         currentNode = currentNode.parent;
       }
+      end = new Date().getTime();
     }
-    const move = _(this.rootNode.getChildren()).sortBy('visits').last().move;
+    const bestChild = _(this.rootNode.getChildren()).sortBy('visits').last();
+    // const move = _(this.rootNode.getChildren()).sortBy('visits').last().move;
     // console.log(this.rootNode.visits, this.rootNode.wins);
     // console.log(this.rootNode.getChildren()
     //   .sort((n1, n2) => n2.visits - n1.visits).map((n) => ({ move: n.move, v: n.visits, wins: n.wins })));
-    // process.stdout.write('move: [' + move + '], time: ' + (new Date().getTime() - start) + ' ms\r\n');
-    return _(this.rootNode.getChildren()).sortBy('visits').last().move;
+    console.log('\r\nChoosen move for ' + this.player + ' : [' + JSON.stringify(bestChild.move) + ']');
+    console.log('Thinking Time: ' + (end - start) + ' ms');
+    console.log('Root visits: ' + this.rootNode.visits);
+    console.log('Root wins: ' + JSON.stringify(this.rootNode.wins));
+    console.log('Choosen child visits: ' + bestChild.visits);
+    console.log('Choosen child wins: ' + JSON.stringify(bestChild.wins));
+    console.log('Choosen child win ratio: ' + bestChild.wins[this.game.getCurrentPlayer()] / bestChild.visits);
+    // console.log('Choosen child win ratio: ' + bestChild.wins[this.player]);
+    return bestChild.move;
   }
 }
 
