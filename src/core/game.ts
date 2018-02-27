@@ -9,6 +9,7 @@ import BoardHelper, { ActionType } from './board-helper';
  */
 export default class Game {
   //#region Propriétés internes #########################################################
+  private gameId: string;
   private status: GameStatus;
   // private currentTurn: number;
   private board: Board;
@@ -33,6 +34,8 @@ export default class Game {
     // Prise en compte des options
     this.players = optionsCopy.players; // || ['Joueur1', 'Joueur2'];
 
+    this.gameId = 'ID_' + Math.floor(Math.random() * 1000000000) + '_' + this.players;
+
     // Initialisation de la Game
     this.status = GameStatus.Created;
   }
@@ -51,6 +54,7 @@ export default class Game {
       this.status = GameStatus.OnGoing;
       // this.currentTurn = 1;
       const initState = BoardHelper.initBoardState({ playerList: this.players });
+      initState.gameId = this.gameId;
       this.board = new Board(initState, []);
       this.board.revealNewCard();
     } else {

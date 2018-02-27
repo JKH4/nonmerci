@@ -29,6 +29,7 @@ describe('Gestion du plateau:', () => {
       expect(board.getState()).toEqual({
         activePlayer: 'Joueur2',
         deckSize: 22,
+        gameId: 'default',
         players: [
           {name: 'Joueur1', cards: [], hiddenTokens: 10},
           {name: 'Joueur2', cards: [3], hiddenTokens: 12},

@@ -25,6 +25,7 @@ function getDefaultBoardState(): IBoardState {
   return {
     activePlayer: 'Joueur1',
     deckSize: 24,
+    gameId: 'default',
     players: [
       {name: 'Joueur1', cards: [], hiddenTokens: 11},
       {name: 'Joueur2', cards: [], hiddenTokens: 11},
@@ -48,6 +49,7 @@ function initBoardState(options?: {deckSize?: number, playerList?: string[]}): I
   const boardState: IBoardState = {
     activePlayer: options.playerList[0],
     deckSize: options.deckSize,
+    gameId: 'default',
     players: options.playerList.map((p) => ({ name: p, cards: [], hiddenTokens: 11 })),
     turn: 0,
     visibleCard: undefined,
@@ -196,6 +198,7 @@ function shuffle(a: any[]) {
 export interface IBoardState {
   activePlayer: string;
   deckSize: number;
+  gameId: string;
   visibleCard: number;
   visibleTokens: number;
   players: Array<{
