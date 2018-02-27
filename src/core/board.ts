@@ -94,7 +94,7 @@ export default class Board extends MctsGame {
     }
 
     // try {
-    this.state.visibleCard = BoardHelper.listAvailableCards(this.state).pop(); // TODO SHUFFLE
+    this.state.visibleCard = BoardHelper.shuffle(BoardHelper.listAvailableCards(this.state)).pop(); // TODO SHUFFLE
     this.state.deckSize--;
     this.history.push({ type: ActionType.DRAW, payload: this.state.visibleCard });
     // } catch (e) {

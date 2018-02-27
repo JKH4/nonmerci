@@ -80,7 +80,7 @@ class Board extends mcts_game_1.MctsGame {
             throw new Error('END_OF_GAME');
         }
         // try {
-        this.state.visibleCard = board_helper_1.default.listAvailableCards(this.state).pop(); // TODO SHUFFLE
+        this.state.visibleCard = board_helper_1.default.shuffle(board_helper_1.default.listAvailableCards(this.state)).pop(); // TODO SHUFFLE
         this.state.deckSize--;
         this.history.push({ type: board_helper_1.ActionType.DRAW, payload: this.state.visibleCard });
         // } catch (e) {

@@ -6,6 +6,7 @@ const BoardHelper = {
   initBoardState,
   listAvailableCards,
   listVisibleCards,
+  shuffle,
   validateBoardState,
   validateHistory,
 };
@@ -166,6 +167,20 @@ function validateHistory(history: BoardHistory) {
   if (draws.length !== new Set(draws).size) {
     throw new Error('DUPLICATE_DRAWS');
   }
+}
+
+/**
+ * Shuffles array in place. ES6 version
+ * @param {Array} a items An array containing the items.
+ * from https://stackoverflow.com/questions/6274339/how-can-i-shuffle-an-array
+ */
+function shuffle(a: any[]) {
+  const newA = Array.from(a);
+  for (let i = newA.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [newA[i], newA[j]] = [newA[j], newA[i]];
+  }
+  return newA;
 }
 
 // function buildCurrentState(initState: IBoardState, history: BoardHistory): IBoardState {
