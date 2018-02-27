@@ -1,6 +1,7 @@
 import Board from '../../src/core/board';
+import { ActionType } from '../../src/core/board-helper';
 import Card from '../../src/core/card';
-import Game, { GameAction, GameStatus, IGameOptions } from '../../src/core/game';
+import Game, { GameStatus, IGameOptions } from '../../src/core/game';
 
 // **************************************************************************************
 describe('Jouer une partie:', () => {
@@ -57,14 +58,14 @@ describe('Jouer une partie:', () => {
 
   it('Initialise la partie avec un tas de jetons vide:', () => {
     game.start();
-    expect(game.getBoard().getState().board.visibleTokens).toEqual(0);
+    expect(game.getBoard().getState().visibleTokens).toEqual(0);
   });
 
-  it('Initialise la partie avec un tas de 23 cartes + une carte visible:', () => {
+  it('Initialise la partie avec un tas de 23 cartes et pas de carte visible:', () => {
     game.start();
-    expect(game.getBoard().getState().board.deck.length).toEqual(23);
-    expect(game.getBoard().getState().board.visibleCard).toBeGreaterThanOrEqual(3);
-    expect(game.getBoard().getState().board.visibleCard).toBeLessThanOrEqual(35);
+    expect(game.getBoard().getState().deckSize).toEqual(23);
+    // expect(game.getBoard().getState().visibleCard).toBeUndefined();
+    expect(game.getBoard().getState().visibleCard).toBeLessThanOrEqual(35);
   });
 
   it('Initialise la partie sans piles de cartes devant les joueurs:', () => {
@@ -72,7 +73,7 @@ describe('Jouer une partie:', () => {
     const boardstate = game.getBoard().getState();
     game.getPlayers().forEach((player) => {
       // if (player === boardstate.activePlayer) {
-        expect(boardstate.board.playerCards.find((p) => p.name === player).cards.length).toEqual(0);
+        expect(boardstate.players.find((p) => p.name === player).cards.length).toEqual(0);
       // } else {
       //   expect(boardstate.otherPlayers.find((p) => p.name === player).cards.length).toEqual(0);
       // }
@@ -85,7 +86,7 @@ describe('Jouer une partie:', () => {
     const boardstate = game.getBoard().getState();
     game.getPlayers().forEach((player) => {
       // if (player === boardstate.activePlayer) {
-        expect(boardstate.playerTokens.find((p) => p.name === player).hiddenTokens).toEqual(11);
+        expect(boardstate.players.find((p) => p.name === player).hiddenTokens).toEqual(11);
     });
     // do {
     //   expect(boardstate.activePlayer.tokens).toEqual(11);
@@ -121,12 +122,12 @@ describe('Jouer un tour:', () => {
   it('Choisi de payer en tant qu\'action du tour:', () => {
     const board = game.getBoard();
     const player = board.getState().activePlayer;
-    const playerTokens = board.getState().playerTokens.find((p) => p.name === player).hiddenTokens;
-    const tokenBag = board.getState().board.visibleTokens;
+    const playerTokens = board.getState().players.find((p) => p.name === player).hiddenTokens;
+    const tokenBag = board.getState().visibleTokens;
     const turn = board.getState().turn;
-    expect(() => game.playNextTurn(GameAction.Pay)).not.toThrowError();
+    expect(() => game.playNextTurn(ActionType.PAY)).not.toThrowError();
     // expect(board.getCurrentBoardState().otherPlayers.find((p) => p.name === player).).toEqual(playerTokens - 1);
-    expect(board.getState().board.visibleTokens).toEqual(tokenBag + 1);
+    expect(board.getState().visibleTokens).toEqual(tokenBag + 1);
     expect(board.getState().turn).toEqual(turn + 1);
   });
 
@@ -135,46 +136,46 @@ describe('Jouer un tour:', () => {
 
     const turn = boardstate.turn;
     const activePlayer = boardstate.activePlayer;
-    const playerCardPiles = boardstate.board.playerCards.find((p) => p.name === activePlayer).cards;
-    const playerTokens = boardstate.playerTokens.find((p) => p.name === activePlayer).hiddenTokens;
-    const card = boardstate.board.visibleCard;
-    const deck = boardstate.board.deck.length;
-    const tokenBag = boardstate.board.visibleTokens;
+    const playerCardPiles = boardstate.players.find((p) => p.name === activePlayer).cards;
+    const playerTokens = boardstate.players.find((p) => p.name === activePlayer).hiddenTokens;
+    const card = boardstate.visibleCard;
+    const deck = boardstate.deckSize;
+    const tokenBag = boardstate.visibleTokens;
 
     spyOn(game.getBoard(), 'pay').and.callFake(() => { throw new Error('NOT_ENOUGH_TOKENS'); });
-    expect(() => game.playNextTurn(GameAction.Pay)).toThrowError('NOT_ENOUGH_TOKENS');
+    expect(() => game.playNextTurn(ActionType.PAY)).toThrowError('NOT_ENOUGH_TOKENS');
 
     const newBoardstate = game.getBoard().getState();
     expect(newBoardstate.turn).toEqual(turn);
     expect(newBoardstate.activePlayer).toEqual(activePlayer);
-    expect(newBoardstate.board.playerCards.find((p) => p.name === activePlayer).cards).toEqual(playerCardPiles);
-    expect(newBoardstate.playerTokens.find((p) => p.name === activePlayer).hiddenTokens).toEqual(playerTokens);
-    expect(newBoardstate.board.visibleCard).toEqual(card);
-    expect(newBoardstate.board.deck.length).toEqual(deck);
-    expect(newBoardstate.board.visibleTokens).toEqual(tokenBag);
+    expect(newBoardstate.players.find((p) => p.name === activePlayer).cards).toEqual(playerCardPiles);
+    expect(newBoardstate.players.find((p) => p.name === activePlayer).hiddenTokens).toEqual(playerTokens);
+    expect(newBoardstate.visibleCard).toEqual(card);
+    expect(newBoardstate.deckSize).toEqual(deck);
+    expect(newBoardstate.visibleTokens).toEqual(tokenBag);
   });
 
   it('Choisi de prendre en tant qu\'action du tour:', () => {
-    game.playNextTurn(GameAction.Pay); // on ajoute quelque tour en Pay pour avoir des jetons au centre
-    game.playNextTurn(GameAction.Pay);
-    game.playNextTurn(GameAction.Pay);
+    game.playNextTurn(ActionType.PAY); // on ajoute quelque tour en Pay pour avoir des jetons au centre
+    game.playNextTurn(ActionType.PAY);
+    game.playNextTurn(ActionType.PAY);
     const board = game.getBoard();
     const boardstate = game.getBoard().getState();
 
     const turn = boardstate.turn;
     const activePlayer = boardstate.activePlayer;
-    const playerTokens = boardstate.playerTokens.find((p) => p.name === activePlayer).hiddenTokens;
-    const card = boardstate.board.visibleCard;
-    const deckSize = boardstate.board.deck.length;
-    const tokenBag = boardstate.board.visibleTokens;
-    expect(() => game.playNextTurn(GameAction.Take)).not.toThrowError();
+    const playerTokens = boardstate.players.find((p) => p.name === activePlayer).hiddenTokens;
+    const card = boardstate.visibleCard;
+    const deckSize = boardstate.deckSize;
+    const tokenBag = boardstate.visibleTokens;
+    expect(() => game.playNextTurn(ActionType.TAKE)).not.toThrowError();
 
     const newBoardstate = game.getBoard().getState();
-    expect(newBoardstate.board.visibleTokens).toEqual(0);
+    expect(newBoardstate.visibleTokens).toEqual(0);
     expect(newBoardstate.activePlayer).toEqual(activePlayer);
-    expect(newBoardstate.board.playerCards.find((p) => p.name === activePlayer).cards.indexOf(card))
+    expect(newBoardstate.players.find((p) => p.name === activePlayer).cards.indexOf(card))
       .toBeGreaterThan(-1);
-    expect(newBoardstate.board.deck.length).toEqual(deckSize - 1);
+    expect(newBoardstate.deckSize).toEqual(deckSize - 1);
     expect(newBoardstate.turn).toEqual(turn + 1);
   });
 
@@ -186,18 +187,18 @@ describe('Jouer un tour:', () => {
   it('Passe au joueur suivant après un tour PAY si ce n\'était pas le dernier joueur:', () => {
     const playerList = game.getPlayers();
     const activePlayer = game.getBoard().getState().activePlayer;
-    game.playNextTurn(GameAction.Pay);
+    game.playNextTurn(ActionType.PAY);
     const nextActivePlayer = game.getBoard().getState().activePlayer;
     expect(playerList.indexOf(activePlayer) + 1).toEqual(playerList.indexOf(nextActivePlayer));
   });
 
   it('Revient au premier joueur après un tour PAY si c\'était le dernier joueur:', () => {
     const playerList = game.getPlayers();
-    game.playNextTurn(GameAction.Pay);
-    game.playNextTurn(GameAction.Pay);
+    game.playNextTurn(ActionType.PAY);
+    game.playNextTurn(ActionType.PAY);
     const activePlayer = game.getBoard().getState().activePlayer;
     expect(playerList.indexOf(activePlayer)).toEqual(playerList.length - 1);
-    game.playNextTurn(GameAction.Pay);
+    game.playNextTurn(ActionType.PAY);
     const nextActivePlayer = game.getBoard().getState().activePlayer;
     expect(playerList.indexOf(nextActivePlayer)).toEqual(0);
   });
@@ -205,7 +206,7 @@ describe('Jouer un tour:', () => {
   it('Reste sur le meme joueur actif après un tour TAKE:', () => {
     const playerList = game.getPlayers();
     const activePlayer = game.getBoard().getState().activePlayer;
-    game.playNextTurn(GameAction.Take);
+    game.playNextTurn(ActionType.TAKE);
     expect(activePlayer).toEqual(game.getBoard().getState().activePlayer);
   });
 

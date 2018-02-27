@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const game_1 = require("../core/game");
+// import { GameAction } from '../core/game';
+const board_helper_1 = require("../core/board-helper");
 const mcts_1 = require("../mcts/mcts");
 class Bot {
     constructor(brainType) {
@@ -11,16 +12,20 @@ class Bot {
                     return this.proposeActionRandom();
                 case BrainOptions.Mcts1:
                     const mcts = new mcts_1.default(board);
+                    // console.log('juste avant selectMove');
                     const move = mcts.selectMove();
                     // console.log('proposeAction', move);
                     return move;
                 case BrainOptions.Take:
-                    return game_1.GameAction.Take;
+                    return { type: board_helper_1.ActionType.TAKE };
+                // return GameAction.Take;
                 default:
                     throw new Error('INVALID_BRAIN_TYPE');
             }
         };
-        this.proposeActionRandom = () => Math.floor(Math.random() * 2) ? game_1.GameAction.Take : game_1.GameAction.Pay;
+        this.proposeActionRandom = () => Math.floor(Math.random() * 2)
+            ? { type: board_helper_1.ActionType.TAKE }
+            : { type: board_helper_1.ActionType.PAY };
         switch (brainType) {
             case BrainOptions.Random:
                 this.brainType = BrainOptions.Random;

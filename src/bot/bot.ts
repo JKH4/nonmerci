@@ -1,5 +1,6 @@
 import Board from '../core/board';
-import { GameAction } from '../core/game';
+// import { GameAction } from '../core/game';
+import { ActionType, IDraw, IGameAction } from '../core/board-helper';
 
 import MCTS from '../mcts/mcts';
 
@@ -26,23 +27,27 @@ export default class Bot {
 
   public getBotInfo = () => ({ brainType: this.brainType });
 
-  public proposeAction = (board: Board): GameAction => {
+  public proposeAction = (board: Board): IDraw | IGameAction => {
     switch (this.brainType) {
       case BrainOptions.Random:
         return this.proposeActionRandom();
       case BrainOptions.Mcts1:
         const mcts = new MCTS(board);
+        // console.log('juste avant selectMove');
         const move = mcts.selectMove();
         // console.log('proposeAction', move);
         return move;
       case BrainOptions.Take:
-        return GameAction.Take;
+        return { type: ActionType.TAKE };
+        // return GameAction.Take;
       default:
         throw new Error('INVALID_BRAIN_TYPE');
     }
   }
 
-  private proposeActionRandom = () => Math.floor(Math.random () * 2) ? GameAction.Take : GameAction.Pay;
+  private proposeActionRandom = (): IGameAction => Math.floor(Math.random () * 2)
+    ? {type: ActionType.TAKE}
+    : {type: ActionType.PAY}
 }
 
 export enum BrainOptions {

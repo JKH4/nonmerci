@@ -2,11 +2,9 @@ import BoardHelper, {
   ActionType,
   BoardHistory,
   IBoardState,
-  // IDraw,
-  // IGameAction,
 } from '../../src/core/board-helper';
 
-fdescribe('Fonctions utilitaires du Plateau:', () => {
+describe('Fonctions utilitaires du Plateau:', () => {
   let defaultBoardState: IBoardState;
   beforeEach(() => { defaultBoardState = BoardHelper.getDefaultBoardState(); });
 

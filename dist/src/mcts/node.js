@@ -32,15 +32,9 @@ class Node {
         if (this.children === null) {
             if (this.move !== null) {
                 this.game.performMove(this.move);
-                // this.game.isDecisionNode()
-                //  ? this.game.performMove(this.move)
-                //  : this.game.performDraw(this.move);
             }
             let moves;
             moves = this.game.getPossibleMoves();
-            // this.game.isDecisionNode()
-            //   ? moves = this.game.getPossibleMoves()
-            //   : moves = this.game.getPossibleDraws();
             if (moves instanceof random_selection_1.default) {
                 moves = moves.array;
                 this.randomNode = true;

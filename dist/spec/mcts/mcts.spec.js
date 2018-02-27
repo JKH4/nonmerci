@@ -5,7 +5,6 @@ const random_selection_1 = require("./../../src/mcts/random-selection");
 const game_examples_1 = require("./game-examples");
 describe('mcts', () => {
     it('should return one option when only one is returned for a state', () => {
-        console.log('JKH');
         const mcts = new mcts_1.default(new game_examples_1.SingleCellGame());
         expect(mcts.selectMove()).toEqual(0);
         // assert.deepEqual(mcts.selectMove(), 0);

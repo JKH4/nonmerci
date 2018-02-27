@@ -76,6 +76,13 @@ function listVisibleCards(state: IBoardState): number[] {
 }
 
 function validateBoardState(state: IBoardState) {
+  // Format général #####################################################################
+  if (!state) {
+    throw new Error('UNDEFINED_STATE');
+  }
+  if (!state.activePlayer || !state.players) {
+    throw new Error('MISSING_PLAYERS');
+  }
   // Joueurs ############################################################################
   // - activePlayer <> playerCards <> playerTokens
   if (state.players.find((p) => p.name === state.activePlayer) === undefined) {

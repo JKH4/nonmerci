@@ -1,6 +1,7 @@
 import Bot, { BrainOptions } from '../../src/bot/bot';
-import Board, { IFullBoardState } from '../../src/core/board';
-import { GameAction } from '../../src/core/game';
+import Board from '../../src/core/board';
+import BoardHelper, { ActionType, IBoardState, IDraw, IGameAction } from '../../src/core/board-helper';
+// import { GameAction } from '../../src/core/game';
 
 describe('Gérer un Bot:', () => {
 
@@ -12,20 +13,22 @@ describe('Gérer un Bot:', () => {
     });
     it('Propose une action de jeu en fonction d\'un état de plateau donné', () => {
       const myBot = new Bot(BrainOptions.Random);
-      const board = new Board({players: ['Anna', 'Bob', 'Chris']});
-      const boardstate = board.getPlayerState();
+      const initState = BoardHelper.initBoardState({playerList: ['Anna', 'Bob', 'Chris']});
+      const board = new Board(initState, []);
+      const boardstate = board.getState();
       const proposedAction = myBot.proposeAction(board);
-      expect(GameAction[proposedAction]).toEqual(proposedAction);
+      expect(ActionType[proposedAction.type]).toEqual(proposedAction.type);
     });
     it('Propose une action aléatoire si le type d\'IA est random', () => {
       const myBot = new Bot(BrainOptions.Random);
-      const board = new Board({players: ['Anna', 'Bob', 'Chris']});
-      const boardstate = board.getPlayerState();
+      const initState = BoardHelper.initBoardState({playerList: ['Anna', 'Bob', 'Chris']});
+      const board = new Board(initState, []);
+      const boardstate = board.getState();
       let nbTake = 0;
       let nbPay = 0;
       const nbActions = 100;
       for (let i = 0; i < nbActions; i++) {
-        myBot.proposeAction(board) === GameAction.Take
+        myBot.proposeAction(board).type === ActionType.TAKE
           ? nbTake++
           : nbPay++;
       }
@@ -38,13 +41,14 @@ describe('Gérer un Bot:', () => {
   describe('Bot TAKE', () => {
     it('Propose toujours une action TAKE si le type d\'IA est Take', () => {
       const myBot = new Bot(BrainOptions.Take);
-      const board = new Board({players: ['Anna', 'Bob', 'Chris']});
-      const boardstate = board.getPlayerState();
+      const initState = BoardHelper.initBoardState({playerList: ['Anna', 'Bob', 'Chris']});
+      const board = new Board(initState, []);
+      const boardstate = board.getState();
       let nbTake = 0;
       let nbPay = 0;
       const nbActions = 100;
       for (let i = 0; i < nbActions; i++) {
-        myBot.proposeAction(board) === GameAction.Take
+        myBot.proposeAction(board).type === ActionType.TAKE
           ? nbTake++
           : nbPay++;
       }
@@ -65,112 +69,134 @@ describe('Gérer un Bot:', () => {
     });
 
     it('Renvoi une erreur si on demande une action alors que le jeu est fini', () => {
-      const fullBoardState: IFullBoardState = {
+      const initState: IBoardState = {
         activePlayer: 'Joueur1',
-        board: {
-          deck: [],
-          playerCards: [
-            { name: 'Joueur1', cards: [] },
-            { name: 'Joueur2', cards: [] },
-            { name: 'Joueur3', cards: [] },
-          ],
-          visibleCard: undefined,
-          visibleTokens: 4,
-        },
-        history: [],
-        playerTokens: [
-          { name: 'Joueur1', hiddenTokens: 11 },
-          { name: 'Joueur2', hiddenTokens: 11 },
-          { name: 'Joueur3', hiddenTokens: 11 },
+        deckSize: 0,
+        players: [
+          { name: 'Joueur1', cards: [], hiddenTokens: 11 },
+          { name: 'Joueur2', cards: [], hiddenTokens: 11 },
+          { name: 'Joueur3', cards: [], hiddenTokens: 11 },
         ],
         turn: 2,
+        visibleCard: undefined,
+        visibleTokens: 0,
       };
 
-      const board = new Board({ fullBoardState });
-      expect(() => myBot.proposeAction(board)).toThrowError();
+      // const initState = BoardHelper.initBoardState({playerList: ['Anna', 'Bob', 'Chris']});
+      const board = new Board(initState, []);
+      const boardstate = board.getState();
+      expect(() => myBot.proposeAction(board)).toThrowError('NO_NEXT_MOVE');
       // const proposedAction = myBot.proposeAction(board);
       // expect(proposedAction).toEqual(undefined);
     });
 
     it('Propose l\'action PAY si le joueur actif a plein de jetons et que la carte est grosse', () => {
-      const fullBoardState: IFullBoardState = {
+      const initState: IBoardState = {
         activePlayer: 'Joueur1',
-        board: {
-          deck: [],
-          playerCards: [
-            { name: 'Joueur1', cards: [] },
-            { name: 'Joueur2', cards: [] },
-            { name: 'Joueur3', cards: [] },
-          ],
-          visibleCard: 35,
-          visibleTokens: 0,
-        },
-        history: [],
-        playerTokens: [
-          { name: 'Joueur1', hiddenTokens: 11 },
-          { name: 'Joueur2', hiddenTokens: 11 },
-          { name: 'Joueur3', hiddenTokens: 11 },
+        deckSize: 0,
+        players: [
+          { name: 'Joueur1', cards: [], hiddenTokens: 11 },
+          { name: 'Joueur2', cards: [], hiddenTokens: 9 },
+          { name: 'Joueur3', cards: [], hiddenTokens: 9 },
         ],
         turn: 2,
+        visibleCard: 35,
+        visibleTokens: 4,
       };
 
-      const board = new Board({ fullBoardState });
+      // const initState = BoardHelper.initBoardState({playerList: ['Anna', 'Bob', 'Chris']});
+      const board = new Board(initState, []);
+      const boardstate = board.getState();
       const proposedAction = myBot.proposeAction(board);
-      expect(proposedAction).toEqual(GameAction.Pay);
+      // console.log(proposedAction);
+      // const toto: IGameAction | IDraw = { type: ActionType.PAY };
+      expect(proposedAction).toEqual({ type: ActionType.PAY });
     });
 
     it('Propose l\'action PAY si le joueur actif des jetons et la carte est plus grosse que les jetons', () => {
-      const fullBoardState: IFullBoardState = {
+      // const fullBoardState: IBoardState = {
+      //   activePlayer: 'Joueur1',
+      //   board: {
+      //     deck: [],
+      //     playerCards: [
+      //       { name: 'Joueur1', cards: [] },
+      //       { name: 'Joueur2', cards: [] },
+      //       { name: 'Joueur3', cards: [] },
+      //     ],
+      //     visibleCard: 3,
+      //     visibleTokens: 1,
+      //   },
+      //   history: [],
+      //   playerTokens: [
+      //     { name: 'Joueur1', hiddenTokens: 1 },
+      //     { name: 'Joueur2', hiddenTokens: 1 },
+      //     { name: 'Joueur3', hiddenTokens: 1 },
+      //   ],
+      //   turn: 2,
+      // };
+
+      // const board = new Board({ fullBoardState });
+      const initState: IBoardState = {
         activePlayer: 'Joueur1',
-        board: {
-          deck: [],
-          playerCards: [
-            { name: 'Joueur1', cards: [] },
-            { name: 'Joueur2', cards: [] },
-            { name: 'Joueur3', cards: [] },
-          ],
-          visibleCard: 3,
-          visibleTokens: 1,
-        },
-        history: [],
-        playerTokens: [
-          { name: 'Joueur1', hiddenTokens: 1 },
-          { name: 'Joueur2', hiddenTokens: 1 },
-          { name: 'Joueur3', hiddenTokens: 1 },
+        deckSize: 0,
+        players: [
+          { name: 'Joueur1', cards: [], hiddenTokens: 10 },
+          { name: 'Joueur2', cards: [], hiddenTokens: 10 },
+          { name: 'Joueur3', cards: [], hiddenTokens: 10 },
         ],
         turn: 2,
+        visibleCard: 35,
+        visibleTokens: 3,
       };
 
-      const board = new Board({ fullBoardState });
+      // const initState = BoardHelper.initBoardState({playerList: ['Anna', 'Bob', 'Chris']});
+      const board = new Board(initState, []);
+      const boardstate = board.getState();
       const proposedAction = myBot.proposeAction(board);
-      expect(proposedAction).toEqual(GameAction.Pay);
+      expect(proposedAction.type).toEqual(ActionType.PAY);
     });
 
     it('Propose l\'action TAKE si le joueur actif a peu de jetons et que la carte est petite', () => {
-      const fullBoardState: IFullBoardState = {
+      // const fullBoardState: IBoardState = {
+      //   activePlayer: 'Joueur1',
+      //   board: {
+      //     deck: [],
+      //     playerCards: [
+      //       { name: 'Joueur1', cards: [] },
+      //       { name: 'Joueur2', cards: [] },
+      //       { name: 'Joueur3', cards: [] },
+      //     ],
+      //     visibleCard: 3,
+      //     visibleTokens: 30,
+      //   },
+      //   history: [],
+      //   playerTokens: [
+      //     { name: 'Joueur1', hiddenTokens: 1 },
+      //     { name: 'Joueur2', hiddenTokens: 1 },
+      //     { name: 'Joueur3', hiddenTokens: 1 },
+      //   ],
+      //   turn: 2,
+      // };
+
+      // const board = new Board({ fullBoardState });
+      const initState: IBoardState = {
         activePlayer: 'Joueur1',
-        board: {
-          deck: [],
-          playerCards: [
-            { name: 'Joueur1', cards: [] },
-            { name: 'Joueur2', cards: [] },
-            { name: 'Joueur3', cards: [] },
-          ],
-          visibleCard: 3,
-          visibleTokens: 30,
-        },
-        history: [],
-        playerTokens: [
-          { name: 'Joueur1', hiddenTokens: 1 },
-          { name: 'Joueur2', hiddenTokens: 1 },
-          { name: 'Joueur3', hiddenTokens: 1 },
+        deckSize: 0,
+        players: [
+          { name: 'Joueur1', cards: [], hiddenTokens: 1 },
+          { name: 'Joueur2', cards: [], hiddenTokens: 1 },
+          { name: 'Joueur3', cards: [], hiddenTokens: 1 },
         ],
         turn: 2,
+        visibleCard: 3,
+        visibleTokens: 30,
       };
 
-      const board = new Board({ fullBoardState });
+      // const initState = BoardHelper.initBoardState({playerList: ['Anna', 'Bob', 'Chris']});
+      const board = new Board(initState, []);
+      const boardstate = board.getState();
       const proposedAction = myBot.proposeAction(board);
-      expect(proposedAction).toEqual(GameAction.Take);
+      expect(proposedAction.type).toEqual(ActionType.TAKE);
     });
   });
 });

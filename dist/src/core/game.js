@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const board_1 = require("./board");
+const board_helper_1 = require("./board-helper");
 /**
  * Error List:
  * - Error ('INVALID_NUMBER_OF_PLAYERS')
@@ -38,7 +39,9 @@ class Game {
         if (this.status === GameStatus.Created) {
             this.status = GameStatus.OnGoing;
             // this.currentTurn = 1;
-            this.board = new board_1.default({ players: this.players });
+            const initState = board_helper_1.default.initBoardState({ playerList: this.players });
+            this.board = new board_1.default(initState, []);
+            this.board.revealNewCard();
         }
         else {
             throw new Error('INVALID_GAME_STATUS');
@@ -46,11 +49,11 @@ class Game {
     }
     terminate() {
         if (this.status === GameStatus.OnGoing) {
-            this.scores = [];
-            this.getPlayers().forEach((player) => {
-                this.scores.push([player, this.getBoard().getPlayerScore(player)]);
-            });
-            this.scores.sort((s1, s2) => s1[1] - s2[1]);
+            this.scores = this.getBoard().getScores();
+            // this.getPlayers().forEach((player) => {
+            //   this.scores.push([player, this.getBoard().getScores().find((p) => p.)]);
+            // });
+            // this.scores.sort((s1: [string, number], s2: [string, number]) => s1[1] - s2[1]);
             this.status = GameStatus.Terminated;
             this.board = undefined;
         }
@@ -60,7 +63,7 @@ class Game {
     }
     playNextTurn(action) {
         if (this.status === GameStatus.OnGoing) {
-            if (action === GameAction.Pay) {
+            if (action === board_helper_1.ActionType.PAY) {
                 try {
                     this.getBoard().pay();
                 }
@@ -69,7 +72,7 @@ class Game {
                 }
                 this.getBoard().switchActivePlayer();
             }
-            else {
+            else if (action === board_helper_1.ActionType.TAKE || action === undefined) {
                 // action par défaut
                 try {
                     this.getBoard().take();
@@ -82,6 +85,9 @@ class Game {
                         throw err;
                     }
                 }
+            }
+            else {
+                throw new Error('INVALID_PLAY_NEXT_TURN_ACTION_TYPE');
             }
             this.getBoard().incrementTurn();
         }
@@ -98,10 +104,5 @@ var GameStatus;
     GameStatus["OnGoing"] = "OnGoing";
     GameStatus["Terminated"] = "Terminated";
 })(GameStatus = exports.GameStatus || (exports.GameStatus = {}));
-var GameAction;
-(function (GameAction) {
-    GameAction["Pay"] = "Pay";
-    GameAction["Take"] = "Take";
-})(GameAction = exports.GameAction || (exports.GameAction = {}));
 //#endregion Types et Interfaces annexes ################################################
 //# sourceMappingURL=game.js.map

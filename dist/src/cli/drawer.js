@@ -41,7 +41,7 @@ class Drawer {
             result += this.drawBoardCardAndToken({ maxWidth, pos: 'bot' }, boardstate);
             result += this.drawBorder({ maxWidth, pos: 'mid' });
             result += this.drawTitle({ maxWidth }, 'Les autres joueurs...');
-            boardstate.board.playerCards.filter((p) => p.name !== boardstate.activePlayer).forEach((player) => {
+            boardstate.players.filter((p) => p.name !== boardstate.activePlayer).forEach((player) => {
                 result += this.drawOtherPlayerCards({ maxWidth, pos: 'top' }, player);
                 result += this.drawOtherPlayerCards({ maxWidth, pos: 'mid' }, player);
                 result += this.drawOtherPlayerCards({ maxWidth, pos: 'bot' }, player);
@@ -49,8 +49,8 @@ class Drawer {
             result += this.drawBorder({ maxWidth, pos: 'mid' });
             result += this.drawTitle({ maxWidth }, 'Votre situation... (' + boardstate.activePlayer + ')');
             const playerData = {
-                cards: boardstate.board.playerCards.find((p) => p.name === boardstate.activePlayer).cards,
-                tokens: boardstate.privateData.hiddenTokens,
+                cards: boardstate.players.find((p) => p.name === boardstate.activePlayer).cards,
+                tokens: boardstate.players.find((p) => p.name === boardstate.activePlayer).hiddenTokens,
             };
             result += this.drawActivePlayerSituation({ maxWidth, pos: 'top' }, playerData);
             result += this.drawActivePlayerSituation({ maxWidth, pos: 'mid' }, playerData);
@@ -115,9 +115,9 @@ class Drawer {
             const first = '║ ';
             const last = ' ║';
             const stuff = ' ';
-            const deckSize = boardstate.board.deckSize;
-            const visibleCard = boardstate.board.visibleCard;
-            const tokens = boardstate.board.visibleTokens;
+            const deckSize = boardstate.deckSize;
+            const visibleCard = boardstate.visibleCard;
+            const tokens = boardstate.visibleTokens;
             let result = '';
             result += first;
             switch (pos) {

@@ -2,7 +2,7 @@ import jasmineModule from 'jasmine';
 
 import NonMerci from '../../src/core/non-merci';
 
-import Game, { GameAction, GameStatus, IGameOptions } from '../../src/core/game';
+import Game, { GameStatus, IGameOptions } from '../../src/core/game';
 
 // **************************************************************************************
 describe('Gérer une partie:', () => {

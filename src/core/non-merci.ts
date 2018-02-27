@@ -3,9 +3,9 @@
 import EventEmitter = require('events');
 import readline = require('readline');
 
-import { IFullBoardState, IPlayerBoardState } from './board';
+import IBoardState, { ActionType } from './board-helper';
 import Card from './card';
-import Game, { GameAction, IGameOptions } from './game';
+import Game, { IGameOptions } from './game';
 
 import Drawer, { IDrawOptions } from '../cli/drawer';
 import Workflow, { IActionResult, IStep, StepType } from './../workflow/workflow';
@@ -224,18 +224,19 @@ export default class NomMerci {
       payload: (iteration): Promise<IActionResult> => new Promise ((resolve, reject) => {
         const actionId = 'action_playNext';
         const board = this.state.game.getBoard();
-        const boardstate = board.getPlayerState();
+        const boardstate = board.getState();
         const player = boardstate.activePlayer;
         try {
           console.log(this.drawer.drawBoard({ maxWidth: MAX_WIDTH}, boardstate));
         } catch (e) {
           console.error(e);
-          const playerTokens = boardstate.privateData.hiddenTokens;
-          const playerCards = boardstate.board.playerCards
+          const playerTokens = boardstate.players
+            .find((p) => p.name === boardstate.activePlayer).hiddenTokens;
+          const playerCards = boardstate.players
             .find((p) => p.name === boardstate.activePlayer).cards
             .map((value) => value <= 9 ? '│ ' + value + '│' : '│'  + value + '│');
-          const card = boardstate.board.visibleCard;
-          const cardTokens = boardstate.board.visibleTokens; // .getCurrentTokenBagSize();
+          const card = boardstate.visibleCard;
+          const cardTokens = boardstate.visibleTokens; // .getCurrentTokenBagSize();
           console.log('############## UX du pauvre ##########################################');
           console.log('# Joueur actif: ' + player + ', (' + playerTokens + ' jetons)');
           console.log('# Cartes du joueur: ', playerCards);
@@ -244,7 +245,7 @@ export default class NomMerci {
         }
         if (player.startsWith('bot')) {
           const botAction = this.state.bots[player].proposeAction(board);
-          const answer = botAction === GameAction.Pay ? 'p' : 't';
+          const answer = botAction.type === ActionType.PAY ? 'p' : 't';
           // console.log('# Action choisi par ' + player + ' (bot) : '
           //  + botAction + '(workflow answer: ' + answer + ')');
           resolve({ id: actionId, res: answer });
@@ -257,11 +258,11 @@ export default class NomMerci {
       onResolve: (result: IActionResult) => {
         // console.log('stepPlayNext onResolve', result);
         if (result.res === 'p') {
-          this.state.game.playNextTurn(GameAction.Pay);
+          this.state.game.playNextTurn(ActionType.PAY);
           return stepPlayNext;
         } else {
           try {
-            this.state.game.playNextTurn(GameAction.Take);
+            this.state.game.playNextTurn(ActionType.TAKE);
             return stepPlayNext;
           } catch (e) {
             const err: Error = e;

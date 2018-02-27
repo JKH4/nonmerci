@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const readline = require("readline");
+const board_helper_1 = require("./board-helper");
 const game_1 = require("./game");
 const drawer_1 = require("../cli/drawer");
 const workflow_1 = require("./../workflow/workflow");
@@ -231,19 +232,20 @@ class NomMerci {
             payload: (iteration) => new Promise((resolve, reject) => {
                 const actionId = 'action_playNext';
                 const board = this.state.game.getBoard();
-                const boardstate = board.getPlayerState();
+                const boardstate = board.getState();
                 const player = boardstate.activePlayer;
                 try {
                     console.log(this.drawer.drawBoard({ maxWidth: MAX_WIDTH }, boardstate));
                 }
                 catch (e) {
                     console.error(e);
-                    const playerTokens = boardstate.privateData.hiddenTokens;
-                    const playerCards = boardstate.board.playerCards
+                    const playerTokens = boardstate.players
+                        .find((p) => p.name === boardstate.activePlayer).hiddenTokens;
+                    const playerCards = boardstate.players
                         .find((p) => p.name === boardstate.activePlayer).cards
                         .map((value) => value <= 9 ? '│ ' + value + '│' : '│' + value + '│');
-                    const card = boardstate.board.visibleCard;
-                    const cardTokens = boardstate.board.visibleTokens; // .getCurrentTokenBagSize();
+                    const card = boardstate.visibleCard;
+                    const cardTokens = boardstate.visibleTokens; // .getCurrentTokenBagSize();
                     console.log('############## UX du pauvre ##########################################');
                     console.log('# Joueur actif: ' + player + ', (' + playerTokens + ' jetons)');
                     console.log('# Cartes du joueur: ', playerCards);
@@ -252,7 +254,7 @@ class NomMerci {
                 }
                 if (player.startsWith('bot')) {
                     const botAction = this.state.bots[player].proposeAction(board);
-                    const answer = botAction === game_1.GameAction.Pay ? 'p' : 't';
+                    const answer = botAction.type === board_helper_1.ActionType.PAY ? 'p' : 't';
                     // console.log('# Action choisi par ' + player + ' (bot) : '
                     //  + botAction + '(workflow answer: ' + answer + ')');
                     resolve({ id: actionId, res: answer });
@@ -266,12 +268,12 @@ class NomMerci {
             onResolve: (result) => {
                 // console.log('stepPlayNext onResolve', result);
                 if (result.res === 'p') {
-                    this.state.game.playNextTurn(game_1.GameAction.Pay);
+                    this.state.game.playNextTurn(board_helper_1.ActionType.PAY);
                     return stepPlayNext;
                 }
                 else {
                     try {
-                        this.state.game.playNextTurn(game_1.GameAction.Take);
+                        this.state.game.playNextTurn(board_helper_1.ActionType.TAKE);
                         return stepPlayNext;
                     }
                     catch (e) {

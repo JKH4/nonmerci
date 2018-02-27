@@ -16,7 +16,12 @@ class Deck {
         else {
             const allCards = [];
             for (let i = 3; i < 36; i++) {
-                allCards.push(new card_1.default(i));
+                if (!options.excludedCardValues || options.excludedCardValues.find((c) => c === i) === undefined) {
+                    allCards.push(new card_1.default(i));
+                }
+            }
+            if (options.size > allCards.length) {
+                throw new Error('TOO_MUCH_EXCLUDED_CARDS');
             }
             this.shuffle(allCards);
             const deckSize = options.size !== undefined ? options.size : 24;
