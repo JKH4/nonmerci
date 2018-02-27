@@ -1,6 +1,8 @@
 import Board from './board';
 import BoardHelper, { ActionType } from './board-helper';
 
+import { Logger, LoggerInstance, transports } from 'winston';
+
 /**
  * Error List:
  * - Error ('INVALID_NUMBER_OF_PLAYERS')
@@ -10,6 +12,7 @@ import BoardHelper, { ActionType } from './board-helper';
 export default class Game {
   //#region Propriétés internes #########################################################
   private gameId: string;
+  // private logger: LoggerInstance;
   private status: GameStatus;
   // private currentTurn: number;
   private board: Board;
@@ -34,7 +37,7 @@ export default class Game {
     // Prise en compte des options
     this.players = optionsCopy.players; // || ['Joueur1', 'Joueur2'];
 
-    this.gameId = 'ID_' + Math.floor(Math.random() * 1000000000) + '_' + this.players;
+    this.gameId = 'ID_' + (+ Math.floor(Math.random() * 1000000000) + '000000000' ).substr(0, 9);
 
     // Initialisation de la Game
     this.status = GameStatus.Created;
@@ -56,7 +59,9 @@ export default class Game {
       const initState = BoardHelper.initBoardState({ playerList: this.players });
       initState.gameId = this.gameId;
       this.board = new Board(initState, []);
+      logger.log('info', this.gameId + '_START_' + this.getBoard().getCurrentPlayer());
       this.board.revealNewCard();
+      logger.log('info', this.gameId + '_DRAWW_' + this.getBoard().getState().visibleCard);
     } else {
       throw new Error('INVALID_GAME_STATUS');
     }
@@ -65,6 +70,7 @@ export default class Game {
   public terminate() {
     if (this.status === GameStatus.OnGoing) {
       this.scores = this.getBoard().getScores();
+      logger.log('info', this.gameId + '_ENDDD_' + this.scores);
       // this.getPlayers().forEach((player) => {
       //   this.scores.push([player, this.getBoard().getScores().find((p) => p.)]);
       // });
@@ -82,6 +88,7 @@ export default class Game {
       if (action === ActionType.PAY) {
         try {
           this.getBoard().pay();
+          logger.log('info', this.gameId + '_PAYYY_' + this.getBoard().getCurrentPlayer());
         } catch (err) {
           throw err;
         }
@@ -90,7 +97,12 @@ export default class Game {
         // action par défaut
         try {
           this.getBoard().take();
+          logger.log('info', this.gameId + '_TAKEE_' + this.getBoard().getCurrentPlayer());
           this.getBoard().revealNewCard();
+          logger.log('info', this.gameId + '_DRAWW_' + this.getBoard().getState().visibleCard);
+          // logger.log('info',
+          //   'playNextTurn DRAW',
+          //   {state: this.getBoard().getState(), history: this.getBoard().getHistory()});
         } catch (e) {
           const err: Error = e;
           if (err.message === 'END_OF_GAME') {
@@ -109,6 +121,19 @@ export default class Game {
   //#endregion Actions ------------------------------------------------------------------
 }
 
+//#region Logger ########################################################################
+const logger = new Logger({
+  transports: [
+    // new transports.Console(),
+    // new transports.File ({
+    //   filename: 'c:\\logs\\games.log',
+    //   handleExceptions: true,
+    //   humanReadableUnhandledException: true,
+    // }),
+  ],
+});
+//#endregion Logger ---------------------------------------------------------------------
+
 //#region Types et Interfaces annexes ###################################################
 export enum GameStatus {
   Created = 'Created',
@@ -124,4 +149,4 @@ export enum GameStatus {
 export interface IGameOptions {
   players: string[];
 }
-//#endregion Types et Interfaces annexes ################################################
+//#endregion Types et Interfaces annexes ------------------------------------------------

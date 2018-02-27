@@ -72,6 +72,7 @@ describe('Gérer un Bot:', () => {
       const initState: IBoardState = {
         activePlayer: 'Joueur1',
         deckSize: 0,
+        gameId: 'default',
         players: [
           { name: 'Joueur1', cards: [], hiddenTokens: 11 },
           { name: 'Joueur2', cards: [], hiddenTokens: 11 },
@@ -94,6 +95,7 @@ describe('Gérer un Bot:', () => {
       const initState: IBoardState = {
         activePlayer: 'Joueur1',
         deckSize: 0,
+        gameId: 'default',
         players: [
           { name: 'Joueur1', cards: [], hiddenTokens: 11 },
           { name: 'Joueur2', cards: [], hiddenTokens: 9 },
@@ -139,6 +141,7 @@ describe('Gérer un Bot:', () => {
       const initState: IBoardState = {
         activePlayer: 'Joueur1',
         deckSize: 0,
+        gameId: 'default',
         players: [
           { name: 'Joueur1', cards: [], hiddenTokens: 10 },
           { name: 'Joueur2', cards: [], hiddenTokens: 10 },
@@ -182,6 +185,7 @@ describe('Gérer un Bot:', () => {
       const initState: IBoardState = {
         activePlayer: 'Joueur1',
         deckSize: 0,
+        gameId: 'default',
         players: [
           { name: 'Joueur1', cards: [], hiddenTokens: 1 },
           { name: 'Joueur2', cards: [], hiddenTokens: 1 },

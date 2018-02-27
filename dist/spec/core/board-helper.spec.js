@@ -9,6 +9,7 @@ describe('Fonctions utilitaires du Plateau:', () => {
             expect(defaultBoardState).toEqual({
                 activePlayer: 'Joueur1',
                 deckSize: 24,
+                gameId: 'default',
                 players: [
                     { name: 'Joueur1', cards: [], hiddenTokens: 11 },
                     { name: 'Joueur2', cards: [], hiddenTokens: 11 },
@@ -63,6 +64,7 @@ describe('Fonctions utilitaires du Plateau:', () => {
             boardState = {
                 activePlayer: 'Joueur1',
                 deckSize: 24,
+                gameId: 'default',
                 players: [
                     { name: 'Joueur1', cards: [3, 4, 5], hiddenTokens: 11 },
                     { name: 'Joueur2', cards: [6, 7], hiddenTokens: 11 },
@@ -87,6 +89,7 @@ describe('Fonctions utilitaires du Plateau:', () => {
             boardState = {
                 activePlayer: 'Joueur1',
                 deckSize: 24,
+                gameId: 'default',
                 players: [
                     { name: 'Joueur1', cards: [3, 4, 5], hiddenTokens: 11 },
                     { name: 'Joueur2', cards: [6, 7], hiddenTokens: 11 },
@@ -113,6 +116,7 @@ describe('Fonctions utilitaires du Plateau:', () => {
             boardState = {
                 activePlayer: 'Joueur1',
                 deckSize: 24,
+                gameId: 'default',
                 players: [
                     { name: 'Joueur1', cards: [3, 4, 5], hiddenTokens: 10 },
                     { name: 'Joueur2', cards: [6, 7], hiddenTokens: 9 },
@@ -207,6 +211,7 @@ describe('Fonctions utilitaires du Plateau:', () => {
             state = {
                 activePlayer: 'Joueur1',
                 deckSize: 24,
+                gameId: 'default',
                 players: [
                     { name: 'Joueur1', cards: [3, 4, 5], hiddenTokens: 10 },
                     { name: 'Joueur2', cards: [6, 7], hiddenTokens: 9 },

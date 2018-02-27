@@ -20,6 +20,7 @@ function getDefaultBoardState() {
     return {
         activePlayer: 'Joueur1',
         deckSize: 24,
+        gameId: 'default',
         players: [
             { name: 'Joueur1', cards: [], hiddenTokens: 11 },
             { name: 'Joueur2', cards: [], hiddenTokens: 11 },
@@ -52,6 +53,7 @@ function initBoardState(options) {
     const boardState = {
         activePlayer: options.playerList[0],
         deckSize: options.deckSize,
+        gameId: 'default',
         players: options.playerList.map((p) => ({ name: p, cards: [], hiddenTokens: 11 })),
         turn: 0,
         visibleCard: undefined,
